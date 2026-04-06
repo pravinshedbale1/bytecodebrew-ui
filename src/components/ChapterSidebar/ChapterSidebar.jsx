@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import styles from './ChapterSidebar.module.css';
 
-const ChapterSidebar = ({ chapters, activeTopicId, onTopicSelect, mobileOpen, onMobileClose }) => {
+const ChapterSidebar = ({ title = "Java", icon = "☕", chapters, activeTopicId, onTopicSelect, mobileOpen, onMobileClose }) => {
   const [expandedChapter, setExpandedChapter] = useState(
     // Auto-expand the chapter containing the active topic
     chapters.findIndex(ch => ch.topics.some(t => t.id === activeTopicId)) || 0
@@ -28,9 +28,9 @@ const ChapterSidebar = ({ chapters, activeTopicId, onTopicSelect, mobileOpen, on
         aria-label="Chapter navigation"
       >
         <div className={styles.sidebarHeader}>
-          <span className={styles.sidebarIcon}>☕</span>
+          <span className={styles.sidebarIcon}>{icon}</span>
           <div>
-            <div className={styles.sidebarTitle}>Java</div>
+            <div className={styles.sidebarTitle}>{title}</div>
             <div className={styles.sidebarSubtitle}>Mastery Path</div>
           </div>
           {mobileOpen && (

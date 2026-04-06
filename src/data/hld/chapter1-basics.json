@@ -1,0 +1,116 @@
+[
+  {
+    "id": "scaling",
+    "title": "Vertical & Horizontal Scaling",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Introduction to Scaling",
+        "paragraphs": [
+          "As traffic to your application grows, the system must scale to handle the increased load. Scaling fundamentally comes down to two approaches: Vertical Scaling (scaling up) and Horizontal Scaling (scaling out). Understanding when to use each is the foundation of High Level Design.",
+          "Vertical scaling involves adding more power (CPU, RAM, Storage) to a single machine. Horizontal scaling involves adding more machines to your pool of resources. While vertical scaling is simpler, horizontal scaling offers virtually limitless expansion and high availability."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Vertical vs. Horizontal Scaling",
+        "headers": ["Feature", "Vertical Scaling (Scale Up)", "Horizontal Scaling (Scale Out)"],
+        "rows": [
+          ["Mechanism", "Add CPU/RAM/Disk to a single server", "Add more servers to the cluster"],
+          ["Complexity", "Low (no code changes needed)", "High (requires load balancing, distributed state)"],
+          ["Limits", "Hardware limits (can only go so high)", "Virtually limitless"],
+          ["Downtime", "Usually requires downtime to upgrade", "Zero downtime (add/remove nodes dynamically)"],
+          ["Cost", "Expensive at high end (premium hardware)", "Cost-effective (commodity hardware)"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "The Real World Approach",
+        "paragraphs": [
+          "In practice, most systems start with vertical scaling because it's cheap and easy. You don't need a load balancer, and your application doesn't need to handle distributed state. However, eventually, you hit a ceiling where a more powerful server is either unavailable or prohibitively expensive.",
+          "At that point, systems transition to horizontal scaling. This introduces complexity: user sessions must be externalized (e.g., in Redis), databases might need replication or sharding, and load balancers are required to distribute traffic. Modern cloud architectures (AWS, GCP) heavily favor horizontal scaling via Auto-Scaling Groups."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "load-balancing",
+    "title": "Load Balancing",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "What is a Load Balancer?",
+        "paragraphs": [
+          "A Load Balancer (LB) is a crucial component in horizontally scaled systems. It sits between the client and the server cluster, distributing incoming network traffic across multiple backend servers to ensure no single server bears too much demand.",
+          "By distributing the load, LBs improve application responsiveness and increase availability. If a server goes down, the LB redirects traffic to the remaining healthy servers."
+        ]
+      },
+      {
+        "type": "diagram",
+        "title": "Load Balancing Architecture",
+        "layers": [
+          { "icon": "🌐", "title": "Clients", "description": "Browsers, Mobile Apps", "color": "#FF8C00" },
+          { "icon": "⚖️", "title": "Load Balancer", "description": "Distributes traffic (Nginx, HAProxy, AWS ALB)", "color": "#3B82F6" },
+          { "icon": "🖥️", "title": "App Server 1", "description": "Handles Request", "color": "#22C55E" },
+          { "icon": "🖥️", "title": "App Server 2", "description": "Handles Request", "color": "#22C55E" },
+          { "icon": "🖥️", "title": "App Server 3", "description": "Handles Request", "color": "#22C55E" }
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Load Balancing Algorithms",
+        "paragraphs": [
+          "Load balancers use various algorithms to decide where to route traffic. Round Robin distributes requests sequentially. Least Connections sends traffic to the server with the fewest active connections. IP Hash uses the client's IP address to consistently route them to the same server, useful for sticky sessions.",
+          "Hardware load balancers (F5) are expensive and high-performance. Software load balancers (Nginx, HAProxy) are flexible and cheaper. Cloud providers offer managed LBs (AWS ALB/NLB) that handle autoscaling automatically."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "caching",
+    "title": "Caching Strategies",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "The Power of Caching",
+        "paragraphs": [
+          "Caching stores copies of frequently accessed data in a fast, temporary storage location (usually RAM) to reduce latency and database load. Reading from memory is orders of magnitude faster than reading from a disk-based database or making an external API call.",
+          "Memcached and Redis are the industry standards for distributed caching. Caches can be placed at various levels: Client/Browser, CDN (Content Delivery Network), Web Server, and Database."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Cache Eviction Policies",
+        "paragraphs": [
+          "Since caches have limited memory, they need rules for removing old data to make room for new data. LRU (Least Recently Used) is the most common — discards the least recently accessed items first. LFU (Least Frequently Used) discards the items accessed least often. FIFO (First In First Out) discards the oldest items regardless of access patterns."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "databases",
+    "title": "SQL vs NoSQL",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Choosing the Right Database",
+        "paragraphs": [
+          "One of the most critical decisions in system design is choosing the right database. SQL (Relational) databases structure data into tables with strict schemas and support complex queries via JOINs. NoSQL (Non-Relational) databases offer flexible schemas and are designed to scale horizontally easily.",
+          "Use SQL (MySQL, PostgreSQL) when your data is highly structured, relationships between data are complex, and you need ACID guarantees (financial systems). Use NoSQL (MongoDB, Cassandra, DynamoDB) when your data structure is fluid, you need rapid iteration, or you're handling massive scale where horizontal partitioning is required."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "SQL vs NoSQL Comparison",
+        "headers": ["Aspect", "SQL", "NoSQL"],
+        "rows": [
+          ["Data Model", "Relational (Tables, Rows)", "Document, Key-Value, Graph, Column"],
+          ["Schema", "Strict (defined upfront)", "Flexible (dynamic)"],
+          ["Scaling", "Mostly Vertical", "Easily Horizontal"],
+          ["Transactions", "ACID guarantees", "BASE (Eventual Consistency generally)"],
+          ["Examples", "PostgreSQL, MySQL, Oracle", "MongoDB, Redis, Cassandra"]
+        ]
+      }
+    ]
+  }
+]

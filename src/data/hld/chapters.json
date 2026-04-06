@@ -1,0 +1,22 @@
+[
+  {
+    "id": "basics",
+    "title": "System Design Basics",
+    "icon": "🏗️",
+    "topics": [
+      { "id": "scaling", "title": "Vertical & Horizontal Scaling" },
+      { "id": "load-balancing", "title": "Load Balancing" },
+      { "id": "caching", "title": "Caching Strategies" },
+      { "id": "databases", "title": "SQL vs NoSQL" }
+    ]
+  },
+  {
+    "id": "solved-designs",
+    "title": "Solved System Designs",
+    "icon": "🛠️",
+    "topics": [
+      { "id": "url-shortener", "title": "Design a URL Shortener (TinyURL)" },
+      { "id": "chat-system", "title": "Design a Chat System (WhatsApp)" }
+    ]
+  }
+]

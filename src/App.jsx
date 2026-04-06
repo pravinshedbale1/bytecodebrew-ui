@@ -3,6 +3,7 @@ import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
 import LandingPage from './pages/LandingPage/LandingPage';
 import JavaPage from './pages/JavaPage/JavaPage';
+import HldPage from './pages/HldPage/HldPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/java" element={<JavaPage />} />
+          <Route path="/hld" element={<HldPage />} />
         </Routes>
       </main>
 

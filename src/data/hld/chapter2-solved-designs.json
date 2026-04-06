@@ -1,0 +1,108 @@
+[
+  {
+    "id": "url-shortener",
+    "title": "Design a URL Shortener (TinyURL)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "System Requirements",
+        "paragraphs": [
+          "A URL shortener service creates a short alias for a long URL. When users click the short link, they are redirected to the original long URL. This is a classic system design interview question.",
+          "Functional Requirements: 1. Given a long URL, generate a shorter, unique alias. 2. When users access the short link, redirect them to the original link. 3. Links expire after a certain timespan.",
+          "Non-Functional Requirements: 1. Highly available. 2. URL redirection must happen in real-time with minimal latency. 3. Short links should not be predictable."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Capacity Estimation",
+        "paragraphs": [
+          "Assume 100 million new URLs generated per month. Read/Write ratio is typically 10:1 (more redirects than creations). Therefore, 1 billion redirections per month.",
+          "QPS (Queries Per Second): Writes = 100M / (30 * 24 * 3600) ≈ 40 URLs/sec. Reads = 400 URLs/sec.",
+          "Storage: Assuming we store URLs for 5 years and each URL mapping takes ~500 bytes. 100M * 12 * 5 = 6 Billion URLs. 6B * 500 bytes = 3 TB of storage."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "Clients talk to an API Gateway/Load Balancer. The LB routes requests to Web Servers.",
+          "When creating a short URL, the Web Server asks a Unique ID Generator for a new ID. The ID is converted to Base62 (a-z, A-Z, 0-9). The mapping (short_url -> long_url) is stored in a database.",
+          "For redirection, the Web Server looks up the short URL in a Cache (Redis) first. If a miss, it hits the Database, caches the result, and returns a HTTP 301 (Permanent Redirect) or 302 (Temporary Redirect)."
+        ]
+      },
+      {
+        "type": "diagram",
+        "title": "URL Shortener Architecture",
+        "layers": [
+          { "icon": "🌐", "title": "Client", "description": "User clicks short link", "color": "#FF8C00" },
+          { "icon": "⚖️", "title": "Load Balancer", "description": "Distributes requests", "color": "#3B82F6" },
+          { "icon": "🖥️", "title": "Web Servers", "description": "Handles API requests", "color": "#22C55E" },
+          { "icon": "⚡", "title": "Cache (Redis)", "description": "Stores frequent URL mappings", "color": "#A855F7" },
+          { "icon": "🗄️", "title": "Database (NoSQL/SQL)", "description": "Stores all mappings", "color": "#EF4444" }
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Use Base62 encoding to convert a numeric ID to a short string (62 characters: A-Z, a-z, 0-9).",
+          "A 7-character Base62 string can support 62^7 ≈ 3.5 Trillion URLs.",
+          "A relational database (MySQL) or NoSQL (Cassandra) can be used. NoSQL scales writes better.",
+          "Pre-generate IDs using a Token Generation Service (like ZooKeeper) to avoid DB locks and collisions.",
+          "HTTP 301 (Permanent Redirect) vs 302 (Temporary). 301 allows browser caching (faster) but prevents tracking analytics on every click. 302 forces a server hit every time."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "chat-system",
+    "title": "Design a Chat System (WhatsApp)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "System Requirements",
+        "paragraphs": [
+          "Designing a chat system like WhatsApp or Messenger involves handling high volume, low latency messaging with status indicators.",
+          "Functional Requirements: 1. 1-on-1 chat. 2. Group chat (max 100 members). 3. Online/Offline presence indicator. 4. Message history across multiple devices.",
+          "Non-Functional Requirements: 1. Real-time delivery (low latency). 2. High availability. 3. Eventual consistency for message history."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Architecture",
+        "paragraphs": [
+          "A chat system cannot rely purely on standard HTTP because HTTP is client-initiated. The server needs to push messages to clients. Therefore, persistent connections using WebSockets are standard.",
+          "The system is split into two parts: Stateless services (login, user profile, signup) and Stateful services (the chat servers managing active WebSocket connections)."
+        ]
+      },
+      {
+        "type": "diagram",
+        "title": "Chat System Core Architecture",
+        "layers": [
+          { "icon": "📱", "title": "Sender Client", "description": "Sends message via WebSocket", "color": "#FF8C00" },
+          { "icon": "💬", "title": "Chat Server A", "description": "Maintains Sender's connection", "color": "#22C55E" },
+          { "icon": "📨", "title": "Message Bus (Kafka)", "description": "Routes messages asynchronously", "color": "#3B82F6" },
+          { "icon": "💬", "title": "Chat Server B", "description": "Maintains Receiver's connection", "color": "#A855F7" },
+          { "icon": "📱", "title": "Receiver Client", "description": "Receives message pushed via WebSocket", "color": "#EF4444" }
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Message Routing and Storage",
+        "paragraphs": [
+          "When Alice sends a message to Bob: Alice sends the message to her connected Chat Server. The Chat Server assigns a message ID, persists it to a database (like Cassandra or HBase, which handle high write throughput well), and publishes it to a Message Queue.",
+          "A routing service looks up which Chat Server Bob is currently connected to (using a distributed cache like Redis). It routes the message to Bob's Chat Server, which pushes it to Bob's device.",
+          "If Bob is offline, the message remains in the database. When Bob comes online, his device fetches unread messages via an API call."
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "WebSockets are preferred for real-time bidirectional communication over long-polling.",
+          "A NoSQL Key-Value store (Cassandra, HBase) is ideal for chat history due to the massive write volume.",
+          "Message ordering can be maintained using a local sequence number generator per chat thread.",
+          "Presence service (online/offline status) works via heartbeat signals from clients every few seconds. If heartbeats stop, the user is marked offline."
+        ]
+      }
+    ]
+  }
+]
