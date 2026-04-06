@@ -14,11 +14,6 @@ const TopicTile = ({ topic }) => {
     status,
   } = topic;
 
-  const tileStyle = {
-    '--tile-color': color,
-    '--tile-glow': `${color}15`,
-  };
-
   const iconBg = {
     background: `${color}18`,
   };
@@ -45,7 +40,6 @@ const TopicTile = ({ topic }) => {
   return (
     <article
       className={`${styles.tile} ${status === 'coming' ? styles.tileDisabled : ''}`}
-      style={tileStyle}
       id={`topic-tile-${id}`}
       role="link"
       tabIndex={0}
@@ -53,13 +47,6 @@ const TopicTile = ({ topic }) => {
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
-      {/* Top bar gradient via inline style injection */}
-      <style>{`
-        #topic-tile-${id}::before {
-          background: linear-gradient(90deg, ${color}, ${color}88) !important;
-        }
-      `}</style>
-
       <div className={styles.tileHeader}>
         <div className={styles.iconWrapper} style={iconBg} aria-hidden="true">
           {icon}

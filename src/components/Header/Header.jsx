@@ -33,7 +33,11 @@ const Header = () => {
           <Link to="/" className={styles.brand} aria-label={`${brand.name} Home`}>
             <img src={brand.logo} alt={brand.logoAlt} className={styles.brandIcon} />
             <div className={styles.brandText}>
-              <span className={styles.brandName}>{brand.name}</span>
+              <span className={styles.brandName}>
+                <span className={styles.brandMuted}>Byte</span>
+                <span className={styles.brandAccent}>Code</span>
+                <span className={styles.brandMuted}>Brew</span>
+              </span>
               <span className={styles.brandTagline}>{brand.tagline}</span>
             </div>
           </Link>

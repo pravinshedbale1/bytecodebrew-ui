@@ -13,9 +13,9 @@
 | **Type** | No-video EdTech platform for software engineers |
 | **Audience** | Working professionals (2-8 yrs) + interview aspirants |
 | **Tech Stack** | React 19 (Vite), react-router-dom v7, Custom CSS Modules, No TailwindCSS |
-| **Design System** | `bytecodebrew-design-system.md` (root directory) |
-| **Brand Fonts** | Sora (headings), Outfit (body), JetBrains Mono (code/labels) |
-| **Theme** | Dark gradient (#0A0E1A → #0F1B3D → #1B0A2E), Orange accent (#FF8C00) |
+| **Design System** | `bytecodebrew-design-system-v2.md` (root directory) — Jonas.io-inspired editorial |
+| **Brand Fonts** | Playfair Display (serif headings), DM Sans (body/UI), JetBrains Mono (code/labels) |
+| **Theme** | Textured dark (#0e0e0e + noise grain), Green accent (#4ADE80), Triangle geometry |
 | **Tagline** | CODE · CONNECT · CREATE |
 | **Instagram** | @bytecodebreww |
 | **Website** | bytecodebrew.com |
@@ -59,7 +59,7 @@ bytecodebrew-ui/
     │   ├── SectionLabel/         # Reusable monospace section label
     │   ├── TopicTile/            # Topic card with semantic colors, navigation
     │   ├── CodeBlock/            # Tokenization-based Java syntax highlighter with copy-to-clipboard
-    │   ├── InterviewCard/        # Expandable Q&A accordion with orange styling
+    │   ├── InterviewCard/        # Expandable Q&A accordion with green styling
     │   ├── TrickyPointCard/      # Warning cards for common gotchas with mistake/correct comparison
     │   ├── ChapterSidebar/       # Sticky sidebar with accordion chapters, mobile drawer
     │   └── ContentRenderer/      # Dynamic content renderer (paragraphs, code, tables, diagrams, key points)
@@ -76,13 +76,13 @@ bytecodebrew-ui/
 
 | # | ID | Title | Category | Color | Status |
 |---|-----|-------|----------|-------|--------|
-| 1 | java | Java | LANGUAGE | #EF4444 (red) | ✅ Live (38 sub-topics, 6 chapters, deep-dive content) |
-| 2 | spring-boot | Spring Boot | FRAMEWORK | #22C55E (green) | ✅ Live (page needed) |
-| 3 | javascript | JavaScript | LANGUAGE | #FF8C00 (orange) | ✅ Live (page needed) |
-| 4 | react | React | FRAMEWORK | #06B6D4 (cyan) | ✅ Live (page needed) |
-| 5 | dsa | DSA | CONCEPTS | #A855F7 (purple) | ✅ Live (page needed) |
-| 6 | hld | High Level Design | DESIGN | #3B82F6 (blue) | 🔜 Coming |
-| 7 | lld | Low Level Design | DESIGN | #EC4899 (pink) | 🔜 Coming |
+| 1 | java | Java | LANGUAGE | #4ADE80 (green) | ✅ Live (38 sub-topics, 6 chapters, deep-dive content) |
+| 2 | spring-boot | Spring Boot | FRAMEWORK | #4ADE80 (green) | ✅ Live (page needed) |
+| 3 | javascript | JavaScript | LANGUAGE | #4ADE80 (green) | ✅ Live (page needed) |
+| 4 | react | React | FRAMEWORK | #4ADE80 (green) | ✅ Live (page needed) |
+| 5 | dsa | DSA | CONCEPTS | #4ADE80 (green) | ✅ Live (page needed) |
+| 6 | hld | High Level Design | DESIGN | #4ADE80 (green) | 🔜 Coming |
+| 7 | lld | Low Level Design | DESIGN | #4ADE80 (green) | 🔜 Coming |
 
 ---
 
@@ -94,7 +94,7 @@ The Java page is a **two-panel learning layout**:
 - Sticky, accordion-style navigation
 - 6 chapters, 38 sub-topics total
 - Chapter expand/collapse with arrow indicators
-- Active topic highlighted with orange marker
+- Active topic highlighted with green marker
 - Mobile: slides in as a drawer
 - Shows total topic count at bottom
 
@@ -111,7 +111,7 @@ The Java page is a **two-panel learning layout**:
 | `code` | CodeBlock with tokenization-based Java syntax highlighting |
 | `table` | Styled data table with headers and rows |
 | `diagram` | Visual layer diagram with icons and colored boxes |
-| `keyPoints` | Bullet list of key takeaways with orange arrows |
+| `keyPoints` | Bullet list of key takeaways with green arrows |
 
 ### Each Sub-Topic Contains
 - `content[]` — array of content blocks (explanation, code, table, diagram, keyPoints)
@@ -169,20 +169,23 @@ All 6 chapter JSON files have been expanded from surface-level summaries to **te
 
 ---
 
-## ⚡ DESIGN SYSTEM RULES (QUICK REFERENCE)
+## ⚡ DESIGN SYSTEM RULES v2 (QUICK REFERENCE)
 
-- **Background**: Always gradient (`#0A0E1A → #0F1B3D → #1B0A2E`), never flat
-- **Text colors**: Primary `#E8E6E3` (never pure white), Secondary `#B0B3B8`, Dim `#8B8D93`
-- **Accent**: Orange (#FF8C00) is the hero color
-- **Cards**: `rgba(15,27,61,0.6)` bg, `rgba(255,140,0,0.12)` border, 12-16px radius
-- **Fonts**: ONLY Sora, Outfit, JetBrains Mono — never Inter/Roboto/Arial
-- **Section labels**: JetBrains Mono 11px uppercase, letter-spacing 3px, orange, with 24px line before
-- **Animations**: 0.7s cubic-bezier(0.16,1,0.3,1) for scroll entrance, 0.3s ease for hover
-- **Glow orbs + grid overlay**: Required on every page for atmosphere
-- **Max content width**: 1200px centered (`--max-width: 1200px`)
+- **Background**: Flat dark `#0e0e0e` with SVG `feTurbulence` noise grain overlay + section-specific radial glows
+- **Text colors**: Primary `#f0f0f0`, Secondary `#888888`, Muted `#555555`, Disabled `#333333`
+- **Accent**: Green (#4ADE80) is the single hero color — use sparingly for max impact
+- **Cards**: `#161616` bg, `#222222` border, 12-14px radius, **3px green left-border accent** on all cards
+- **Fonts**: ONLY Playfair Display (serif headlines), DM Sans (body/UI), JetBrains Mono (code/labels)
+- **Section labels**: JetBrains Mono 13px uppercase, letter-spacing 3px, green, no prefix line
+- **Animations**: 0.6s cubic-bezier(0.16,1,0.3,1) entrance-only, 0.2-0.3s ease for hover
+- **Decorations**: SVG wireframe/filled triangles as geometric accents, grid overlay with white lines
+- **Max content width**: 1000px centered (`--max-width: 1000px`)
 - **Logo**: Coffee mug with binary code (`/public/logo.png`), favicon at `/public/favicon.png`
-- **Stats**: 3 stat boxes (Topics, Concepts, Depth) — no Videos card
-- **Spacing**: Compact — avoid excessive whitespace
+- **Stats**: 3 stat boxes (Topics, Concepts, Depth) with green accent
+- **Spacing**: Generous whitespace — editorial breathing room
+- **Header brand**: Tri-color split: Byte (muted) + Code (green) + Brew (muted)
+- **html2canvas rules**: Use `radial-gradient` for glows, avoid `filter: blur()` or `box-shadow` for performance
+- **Syntax highlighting**: keywords=#4ADE80, strings=#FBBF24, comments=#444, annotations=#818CF8, numbers=#06B6D4, literals=#F9A8D4
 
 ---
 
@@ -219,19 +222,23 @@ All 6 chapter JSON files have been expanded from surface-level summaries to **te
 2. User wants **interview preparation** focus for software engineers
 3. Every page and component **MUST** be responsive + SEO friendly
 4. User will give **incremental commands** — build feature by feature
-5. The design system document (`bytecodebrew-design-system.md`) is the **ultimate visual authority**
+5. The design system document (`bytecodebrew-design-system-v2.md`) is the **ultimate visual authority**
 6. **Custom CSS modules only** — no Tailwind, no inline styles, no UI libraries
 7. **Zero hardcoded data in components** — everything pulled from `src/data/*.json`
 8. **Component styles co-located** — each component's `.module.css` lives in its folder
 9. **Uniform card heights** — all topic tiles in a grid row must be equal height
-10. **Compact spacing** — avoid excessive whitespace between sections
+10. **Generous whitespace** — editorial breathing room, NOT compact spacing
 11. The landing page currently has 7 topic tiles — more may be added later
 12. User's prior projects include DSA visualizer, JVM visualizer, JPMC interview prep (all under ByteCodeBrew brand)
 13. **Java module pattern** — use the same ChapterSidebar + ContentRenderer pattern for other topic pages
 14. **CodeBlock tokenizer** — never use regex replacement for syntax highlighting (causes `class` keyword conflicts with HTML attributes)
 15. **Java content depth** — all 6 chapters have been expanded to interview-level depth with JVM internals, SOLID, design patterns, concurrency patterns, GC mechanics, escape analysis, memory leak patterns
 16. **Code-line spacing** — `.code-line` must be `display: inline` (not `block`) to avoid double line breaks in `<pre>` elements. `line-height: 1.6` for comfortable code reading
+17. **v2 Rebrand (2026-04-07)** — Full migration from v1 (orange/cyberpunk/Sora) to v2 (green/editorial/Playfair Display). All CSS modules updated, data colors unified to green, triangle decorations replace glow orbs
+18. **All topic colors unified** — Every topic uses #4ADE80 (green) for badges/icons to maintain single-accent-color economy
+19. **TrickyPoint cards** — Use yellow (#FBBF24) accent for warning differentiation, NOT red backgrounds
+20. **3px green left-border** — Required on ALL card-type components: TopicTile, InterviewCard, TrickyPointCard (yellow), stat boxes, nav buttons
 
 ---
 
-*Last updated: 2026-04-06*
+*Last updated: 2026-04-07 — v2 Design System Rebrand Complete*

@@ -12,11 +12,19 @@ const LandingPage = () => {
 
   return (
     <div className={styles.page}>
-      {/* --- Atmospheric Glow Orbs --- */}
-      <div className={styles.orbOrange1} aria-hidden="true" />
-      <div className={styles.orbPurple} aria-hidden="true" />
-      <div className={styles.orbBlue} aria-hidden="true" />
-      <div className={styles.orbOrange2} aria-hidden="true" />
+      {/* --- SVG Triangle Decorations (v2 geometric system) --- */}
+      <svg className={styles.triangleLarge} viewBox="0 0 200 180" fill="none" aria-hidden="true">
+        <polygon points="100,10 190,170 10,170" stroke="#4ADE80" strokeWidth="1" opacity="0.05" />
+      </svg>
+      <svg className={styles.triangleMedium} viewBox="0 0 160 140" fill="none" aria-hidden="true">
+        <polygon points="80,8 152,132 8,132" fill="#4ADE80" opacity="0.08" />
+      </svg>
+      <svg className={styles.triangleSmall} viewBox="0 0 200 180" fill="none" aria-hidden="true">
+        <polygon points="100,10 190,170 10,170" stroke="#4ADE80" strokeWidth="1.5" opacity="0.04" />
+      </svg>
+
+      {/* --- Ambient Glow (radial gradient, not filter:blur) --- */}
+      <div className={styles.ambientGlow} aria-hidden="true" />
 
       {/* --- Hero Section --- */}
       <section className={styles.hero} id="hero-section" aria-labelledby="hero-title">
@@ -26,7 +34,8 @@ const LandingPage = () => {
         </div>
 
         <h1 id="hero-title" className={styles.heroTitle}>
-          {hero.title}
+          Master Software{' '}
+          <span className={styles.accent}>Engineering.</span>
         </h1>
 
         <p className={styles.heroSubtitle}>

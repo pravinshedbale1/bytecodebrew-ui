@@ -1,5 +1,5 @@
 /* ============================================
-   Header Component — Module CSS
+   Header Component — Module CSS (v2)
    ============================================ */
 
 .header {
@@ -8,7 +8,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  padding: 0 var(--content-padding);
+  padding: 0;
   transition: all 0.35s ease;
   backdrop-filter: blur(0px);
   background: transparent;
@@ -16,16 +16,17 @@
 
 .header--scrolled {
   backdrop-filter: blur(16px);
-  background: rgba(10, 14, 26, 0.85);
-  border-bottom: 1px solid var(--card-border);
+  background: rgba(28, 26, 22, 0.85);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .headerInner {
-  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 72px;
+  height: 64px;
 }
 
 .brand {
@@ -44,8 +45,7 @@
 }
 
 .brand:hover .brandIcon {
-  border-color: rgba(255, 140, 0, 0.5);
-  box-shadow: 0 0 20px rgba(255, 140, 0, 0.15);
+  border-color: var(--green-border);
 }
 
 .brandText {
@@ -54,12 +54,20 @@
 }
 
 .brandName {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
-  font-size: 18px;
-  color: var(--text-primary);
-  letter-spacing: -0.3px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   line-height: 1.2;
+}
+
+.brandMuted {
+  color: var(--text-muted);
+}
+
+.brandAccent {
+  color: var(--green);
 }
 
 .brandTagline {
@@ -67,7 +75,7 @@
   font-size: 9px;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--green);
   opacity: 0.7;
   line-height: 1;
   margin-top: 2px;
@@ -80,7 +88,7 @@
 }
 
 .navLink {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 14px;
   color: var(--text-secondary);
@@ -96,28 +104,26 @@
 }
 
 .navLink--active {
-  color: var(--orange);
+  color: var(--green);
 }
 
 .navCta {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 10px 20px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
-  color: var(--bg-start);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 28px;
+  border-radius: 60px;
+  background: var(--green);
+  color: #000000;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border: none;
   margin-left: 8px;
 }
 
 .navCta:hover {
-  box-shadow: 0 0 24px rgba(255, 140, 0, 0.3);
   transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(74, 222, 128, 0.25);
 }
 
 /* Mobile menu button */
@@ -160,7 +166,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(10, 14, 26, 0.97);
+  background: rgba(28, 26, 22, 0.97);
   backdrop-filter: blur(20px);
   padding: 32px var(--content-padding);
   flex-direction: column;
@@ -174,7 +180,7 @@
 }
 
 .mobileNavLink {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 18px;
   color: var(--text-secondary);
@@ -188,21 +194,19 @@
 
 .mobileNavLink:hover {
   color: var(--text-primary);
-  background: var(--card-bg);
-  border-color: var(--card-border);
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
 }
 
 .mobileNavCta {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 500;
-  font-size: 14px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
   padding: 16px 20px;
   margin-top: 16px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
-  color: var(--bg-start);
+  border-radius: 60px;
+  background: var(--green);
+  color: #000000;
   cursor: pointer;
   border: none;
   text-align: center;
@@ -222,13 +226,12 @@
   }
 
   .brandName {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .brandIcon {
     width: 36px;
     height: 36px;
-    font-size: 16px;
   }
 
   .brandTagline {

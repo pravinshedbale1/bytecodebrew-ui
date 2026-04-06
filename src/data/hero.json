@@ -3,11 +3,11 @@
     "text": "Platform Active",
     "active": true
   },
-  "title": "Master Software Engineering",
+  "title": "Master Software Engineering.",
   "subtitle": "Curated learning for working professionals and aspirants. Deep-dive into Java, React, System Design, and DSA — built for engineers who prefer reading over watching.",
   "stats": [
-    { "value": "7", "label": "Topics", "color": "var(--orange)" },
-    { "value": "100+", "label": "Concepts", "color": "var(--cyan)" },
-    { "value": "∞", "label": "Depth", "color": "var(--purple)" }
+    { "value": "7", "label": "Topics", "color": "var(--green)" },
+    { "value": "100+", "label": "Concepts", "color": "var(--green)" },
+    { "value": "∞", "label": "Depth", "color": "var(--green)" }
   ]
 }

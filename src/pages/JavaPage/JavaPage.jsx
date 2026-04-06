@@ -70,10 +70,13 @@ const JavaPage = () => {
 
   return (
     <div className={styles.page}>
-      {/* Glow orbs */}
-      <div className={styles.orbRed} aria-hidden="true" />
-      <div className={styles.orbPurple} aria-hidden="true" />
-      <div className={styles.orbBlue} aria-hidden="true" />
+      {/* SVG Triangle Decorations (v2 geometric system) */}
+      <svg className={styles.triangleTop} viewBox="0 0 200 180" fill="none" aria-hidden="true">
+        <polygon points="100,10 190,170 10,170" stroke="#4ADE80" strokeWidth="1" opacity="0.04" />
+      </svg>
+      <svg className={styles.triangleBottom} viewBox="0 0 200 180" fill="none" aria-hidden="true">
+        <polygon points="100,10 190,170 10,170" stroke="#4ADE80" strokeWidth="1.5" opacity="0.03" />
+      </svg>
 
       {/* Mobile header */}
       <div className={styles.mobileHeader}>

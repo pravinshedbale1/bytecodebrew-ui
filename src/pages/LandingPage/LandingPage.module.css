@@ -1,5 +1,5 @@
 /* ============================================
-   LandingPage — Module CSS
+   LandingPage — Module CSS (v2)
    ============================================ */
 
 /* --- Page Wrapper --- */
@@ -9,64 +9,62 @@
   overflow-x: hidden;
 }
 
-/* --- Glow Orbs --- */
-.orbOrange1 {
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  top: -100px;
-  left: -150px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 140, 0, 0.06) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.orbPurple {
+/* --- Triangle Decorations (v2 geometric system) --- */
+.triangleLarge {
   position: absolute;
   width: 400px;
-  height: 400px;
-  top: 600px;
-  right: -100px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.orbBlue {
-  position: absolute;
-  width: 450px;
-  height: 450px;
-  top: 1400px;
-  left: -120px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.orbOrange2 {
-  position: absolute;
-  width: 350px;
-  height: 350px;
-  top: 2200px;
+  height: 360px;
+  top: 60px;
   right: -80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 140, 0, 0.04) 0%, transparent 70%);
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
+}
+
+.triangleMedium {
+  position: absolute;
+  width: 160px;
+  height: 140px;
+  top: 350px;
+  right: 60px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.triangleSmall {
+  position: absolute;
+  width: 300px;
+  height: 270px;
+  top: 1200px;
+  left: -100px;
+  z-index: 0;
+  pointer-events: none;
+  transform: rotate(30deg);
+}
+
+/* --- Ambient Glow (radial gradient, not filter:blur) --- */
+.ambientGlow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 25%,
+    rgba(74, 222, 128, 0.04) 0%,
+    transparent 60%
+  );
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* --- Hero Section --- */
 .hero {
   position: relative;
   z-index: 1;
-  padding: 120px var(--content-padding) 32px;
+  padding: 140px var(--content-padding) 48px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-width: var(--max-width);
+  margin: 0 auto;
 }
 
 .heroStatus {
@@ -76,8 +74,8 @@
   margin-bottom: 32px;
   padding: 6px 16px;
   border-radius: 100px;
-  background: rgba(255, 140, 0, 0.08);
-  border: 1px solid rgba(255, 140, 0, 0.15);
+  background: var(--green-surface);
+  border: 1px solid var(--green-border);
   animation: fadeSlideIn 0.6s ease 0.1s both;
 }
 
@@ -85,42 +83,41 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--orange);
-  box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
-  animation: pulse 2s infinite;
+  background: var(--green);
 }
 
 .heroStatusText {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--green);
 }
 
 .heroTitle {
-  font-family: 'Sora', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 800;
-  font-size: clamp(36px, 6vw, 64px);
-  line-height: 1.1;
-  background: linear-gradient(135deg, #E8E6E3 0%, #FF8C00 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  max-width: 720px;
-  margin-bottom: 20px;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.05;
+  color: var(--text-primary);
+  max-width: 800px;
+  margin-bottom: 24px;
   animation: fadeSlideIn 0.6s ease 0.2s both;
 }
 
+.accent {
+  color: var(--green);
+}
+
 .heroSubtitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: clamp(16px, 2.5vw, 18px);
-  line-height: 1.75;
+  font-size: clamp(16px, 2.5vw, 22px);
+  line-height: 1.6;
   color: var(--text-secondary);
-  max-width: 600px;
-  margin-bottom: 32px;
+  max-width: 700px;
+  margin-bottom: 48px;
   animation: fadeSlideIn 0.6s ease 0.3s both;
 }
 
@@ -128,40 +125,43 @@
 .heroStats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 20px;
   width: 100%;
   max-width: 560px;
   animation: fadeSlideIn 0.6s ease 0.45s both;
 }
 
 .statBox {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  padding: 20px 16px;
+  padding: 24px 16px;
   text-align: center;
   transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .statBox:hover {
-  border-color: rgba(255, 140, 0, 0.3);
+  border-color: var(--border-medium);
+  background: var(--bg-card-hover);
 }
 
 .statValue {
-  font-family: 'Sora', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 800;
-  font-size: clamp(24px, 3.5vw, 36px);
+  font-size: clamp(28px, 3.5vw, 42px);
   line-height: 1.2;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .statLabel {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
@@ -169,28 +169,28 @@
 .topicsSection {
   position: relative;
   z-index: 1;
-  padding: 20px var(--content-padding) 40px;
-  max-width: calc(var(--max-width) + 48px);
+  padding: 60px var(--content-padding) 80px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .sectionTitle {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
-  font-size: clamp(28px, 4vw, 42px);
-  line-height: 1.2;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 54px);
+  line-height: 1.1;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .sectionSubtitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: 16px;
-  line-height: 1.75;
+  font-size: 18px;
+  line-height: 1.6;
   color: var(--text-secondary);
-  max-width: 600px;
-  margin-bottom: 40px;
+  max-width: 700px;
+  margin-bottom: 48px;
 }
 
 /* --- Topics Grid --- */
@@ -204,13 +204,13 @@
 /* --- Section entrance animation --- */
 .sectionHidden {
   opacity: 0;
-  transform: translateY(40px);
+  transform: translateY(30px);
 }
 
 .sectionVisible {
   opacity: 1;
   transform: translateY(0);
-  transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* tile entrance stagger via CSS animation */
@@ -221,16 +221,18 @@
 /* --- Brand Closing --- */
 .brandClose {
   text-align: center;
-  padding: 16px var(--content-padding) 0;
+  padding: 24px var(--content-padding) 0;
   position: relative;
   z-index: 1;
   animation: fadeSlideIn 0.6s ease 0.5s both;
 }
 
 .brandCloseName {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
   font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
@@ -240,14 +242,14 @@
   font-size: 10px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--green);
   opacity: 0.6;
 }
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
   .hero {
-    padding: 100px var(--content-padding) 24px;
+    padding: 120px var(--content-padding) 32px;
   }
 
   .heroStats {
@@ -262,13 +264,22 @@
   }
 
   .topicsSection {
-    padding: 16px var(--content-padding) 32px;
+    padding: 40px var(--content-padding) 60px;
+  }
+
+  .triangleLarge {
+    width: 250px;
+    right: -120px;
+  }
+
+  .triangleMedium {
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
   .hero {
-    padding: 90px 16px 20px;
+    padding: 100px 16px 24px;
   }
 
   .heroStats {
@@ -277,12 +288,12 @@
   }
 
   .statBox {
-    padding: 14px 10px;
+    padding: 16px 10px;
     border-radius: 12px;
   }
 
   .statValue {
-    font-size: clamp(20px, 5vw, 28px);
+    font-size: clamp(22px, 5vw, 28px);
   }
 
   .statLabel {
@@ -291,7 +302,7 @@
   }
 
   .topicsSection {
-    padding: 12px 16px 24px;
+    padding: 32px 16px 40px;
   }
 
   .topicsGrid {
@@ -301,10 +312,10 @@
 
 /* Stagger animation delays for tile grid items */
 .tileDelay0 { animation-delay: 0.05s; }
-.tileDelay1 { animation-delay: 0.1s; }
-.tileDelay2 { animation-delay: 0.15s; }
-.tileDelay3 { animation-delay: 0.2s; }
-.tileDelay4 { animation-delay: 0.25s; }
-.tileDelay5 { animation-delay: 0.3s; }
-.tileDelay6 { animation-delay: 0.35s; }
-.tileDelay7 { animation-delay: 0.4s; }
+.tileDelay1 { animation-delay: 0.13s; }
+.tileDelay2 { animation-delay: 0.21s; }
+.tileDelay3 { animation-delay: 0.29s; }
+.tileDelay4 { animation-delay: 0.37s; }
+.tileDelay5 { animation-delay: 0.45s; }
+.tileDelay6 { animation-delay: 0.53s; }
+.tileDelay7 { animation-delay: 0.61s; }

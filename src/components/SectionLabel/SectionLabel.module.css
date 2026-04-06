@@ -1,27 +1,19 @@
 /* ============================================
-   SectionLabel Component — Module CSS
+   SectionLabel Component — Module CSS (v2)
    ============================================ */
 
 .sectionLabel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.sectionLine {
-  width: 24px;
-  height: 1px;
-  background: var(--orange);
-  flex-shrink: 0;
+  margin-bottom: 20px;
 }
 
 .sectionText {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 400;
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--green);
   line-height: 1;
 }
