@@ -1,0 +1,41 @@
+[
+  {
+    "id": "fundamentals",
+    "title": "System Design Fundamentals",
+    "icon": "🏗️",
+    "topics": [
+      { "id": "scaling-basics", "title": "Vertical vs. Horizontal Scaling" },
+      { "id": "load-balancing", "title": "Load Balancing Algorithms" },
+      { "id": "caching", "title": "Caching Strategies" },
+      { "id": "cap-theorem", "title": "CAP Theorem & PACELC" }
+    ]
+  },
+  {
+    "id": "advanced-concepts",
+    "title": "Advanced Distributed Concepts",
+    "icon": "⚡",
+    "topics": [
+      { "id": "database-sharding", "title": "Database Sharding & Partitioning" },
+      { "id": "message-queues", "title": "Message Queues & Event Streaming" },
+      { "id": "rate-limiting", "title": "Rate Limiting Algorithms" },
+      { "id": "consensus", "title": "Consensus Algorithms (Paxos, Raft)" }
+    ]
+  },
+  {
+    "id": "solved-designs",
+    "title": "Solved System Designs",
+    "icon": "📐",
+    "topics": [
+      { "id": "url-shortener", "title": "Design a URL Shortener (TinyURL)" },
+      { "id": "chat-system", "title": "Design a Chat System (WhatsApp)" },
+      { "id": "video-streaming", "title": "Design a Video Streaming Platform (YouTube)" },
+      { "id": "ride-sharing", "title": "Design a Ride-Sharing App (Uber)" },
+      { "id": "social-network", "title": "Design a Social Network Feed (Twitter)" },
+      { "id": "ecommerce", "title": "Design an E-commerce Platform (Amazon)" },
+      { "id": "web-crawler", "title": "Design a Web Crawler" },
+      { "id": "api-rate-limiter", "title": "Design an API Rate Limiter" },
+      { "id": "distributed-cache", "title": "Design a Distributed Cache (Redis)" },
+      { "id": "notification-system", "title": "Design a Notification System" }
+    ]
+  }
+]

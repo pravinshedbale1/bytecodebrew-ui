@@ -1,0 +1,89 @@
+[
+  {
+    "id": "database-sharding",
+    "title": "Database Sharding & Partitioning",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Handling massive datasets",
+        "paragraphs": [
+          "When a single database server cannot hold all the data or handle the query load, we need to split the data. Sharding is the process of distributing data across multiple databases (shards) so that each shard holds only a portion of the total data."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Sharding Strategies",
+        "paragraphs": [
+          "1. Range Based: Data is split based on a range of a shard key (e.g., users A-M in Shard 1, N-Z in Shard 2). Can lead to uneven data distribution (hotspots).",
+          "2. Hash Based: A hash function is applied to the shard key to determine the shard. Distributes data evenly but makes range queries difficult.",
+          "3. Directory Based: A lookup service maintains a mapping of which shard holds which data. Flexible but adds a single point of failure and latency."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "message-queues",
+    "title": "Message Queues & Event Streaming",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Decoupling Systems",
+        "paragraphs": [
+          "Message queues (e.g., RabbitMQ, SQS) and event streaming platforms (e.g., Kafka) allow disparate systems to communicate asynchronously. They act as a buffer, ensuring producers and consumers do not need to operate at the same speed or be online simultaneously."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Use Cases",
+        "paragraphs": [
+          "1. Background processing: Offload heavy tasks (e.g., video encoding, email sending) from the main request thread.",
+          "2. Smoothing traffic spikes: Absorb sudden bursts of traffic so backend systems aren't overwhelmed.",
+          "3. Microservices communication: Enable services to emit events and react to them independently."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rate-limiting",
+    "title": "Rate Limiting Algorithms",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Protecting APIs",
+        "paragraphs": [
+          "Rate limiting controls the number of requests a client can make to an API within a specific timeframe. It prevents abuse, DoS attacks, and ensures fair resource usage."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Common Algorithms",
+        "paragraphs": [
+          "1. Token Bucket: Tokens are added to a bucket at a fixed rate. A request consumes a token. If the bucket is empty, the request is rejected. Allows for bursts.",
+          "2. Leaky Bucket: Requests are added to a queue (bucket). They are processed at a fixed rate. If the bucket is full, new requests are dropped. Smooths out traffic.",
+          "3. Fixed Window: Counts requests in fixed time intervals (e.g., 00:00 - 00:01). Can cause spikes at the edges of windows.",
+          "4. Sliding Window: Tracks timestamps of recent requests. More accurate but uses more memory."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "consensus",
+    "title": "Consensus Algorithms (Paxos, Raft)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Agreeing on State",
+        "paragraphs": [
+          "In a distributed system, multiple nodes need to agree on a shared state, even if some nodes fail. Consensus algorithms solve this problem."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Paxos vs Raft",
+        "paragraphs": [
+          "Paxos is the foundational consensus algorithm but is notoriously difficult to understand and implement. Raft was designed specifically to be more understandable while providing the same guarantees. Raft uses a leader-based approach where nodes elect a leader to coordinate logs."
+        ]
+      }
+    ]
+  }
+]
