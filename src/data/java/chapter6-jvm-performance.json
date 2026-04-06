@@ -1,0 +1,340 @@
+[
+  {
+    "id": "garbage-collection",
+    "title": "Garbage Collection",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "GC Algorithms: G1, ZGC, Shenandoah",
+        "paragraphs": [
+          "Garbage Collection automatically reclaims memory from unreachable objects. The JVM provides several GC algorithms, each optimized for different workloads. The heap is divided into generations: Young (Eden + Survivor spaces) for short-lived objects, and Old (Tenured) for long-lived objects. Most objects die young — Minor GC handles Young Gen efficiently.",
+          "G1GC (Garbage First) is the default since Java 9. It divides the heap into ~2000 equal-sized regions and collects regions with the most garbage first (hence 'Garbage First'). It targets configurable pause time goals (-XX:MaxGCPauseMillis=200). ZGC (Java 15+) is a low-latency collector with sub-millisecond pause times regardless of heap size — suitable for latency-sensitive applications with large heaps."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "GC Algorithm Comparison",
+        "headers": ["Collector", "Pause Time", "Throughput", "Heap Size", "Best For"],
+        "rows": [
+          ["G1GC (default)", "Medium (10-200ms)", "High", "4-64GB", "General purpose"],
+          ["ZGC", "Ultra-low (<1ms)", "Medium-High", "Up to 16TB", "Latency-sensitive, large heaps"],
+          ["Shenandoah", "Ultra-low (<1ms)", "Medium", "Up to TBs", "Low latency (RedHat)"],
+          ["Parallel GC", "High pauses", "Highest", "4-32GB", "Throughput-critical batch jobs"],
+          ["Serial GC", "Stop-the-world", "Low", "<256MB", "Single-core, embedded"]
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "GC Tuning Command-Line Flags",
+        "code": "// Use G1GC with 200ms pause target\njava -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xmx4g MyApp\n\n// Use ZGC for ultra-low latency\njava -XX:+UseZGC -Xmx16g MyApp\n\n// GC Logging (Java 9+)\njava -Xlog:gc*:file=gc.log:time,level,tags -jar app.jar\n\n// Common tuning flags\n-Xms4g          // initial heap size\n-Xmx4g          // max heap size (set equal to Xms to avoid resizing)\n-XX:NewRatio=2  // Old:Young ratio (2:1)\n-XX:SurvivorRatio=8  // Eden:Survivor ratio\n-XX:MaxMetaspaceSize=256m  // cap metaspace growth"
+      },
+      {
+        "type": "diagram",
+        "title": "Java Heap Memory Layout",
+        "layers": [
+          { "icon": "🌱", "title": "Young Generation", "description": "Eden + S0 + S1 — new objects allocated here, Minor GC", "color": "#22c55e" },
+          { "icon": "📦", "title": "Old (Tenured) Generation", "description": "Long-lived objects promoted from Young Gen, Major GC", "color": "#3b82f6" },
+          { "icon": "📋", "title": "Metaspace (off-heap)", "description": "Class metadata, method data — replaces PermGen (Java 8+)", "color": "#a855f7" }
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "GC Lifecycle: Minor, Major, and Full GC",
+        "paragraphs": [
+          "Minor GC (Young Gen): triggered when Eden fills up. Copies live objects from Eden to Survivor space (S0 or S1, alternating). Objects that survive multiple Minor GCs (age threshold, default 15) get promoted to Old Gen. Minor GC is fast because most Eden objects are dead — only live objects need copying. Uses a stop-the-world pause, but it's brief (milliseconds).",
+          "Major GC (Old Gen): triggered when Old Gen fills. Much slower than Minor GC because Old Gen is larger and most objects are alive. G1GC performs major GC incrementally. Full GC collects BOTH young and old and compacts — the most expensive operation. Full GC should be extremely rare in a well-tuned application.",
+          "GC Roots are the starting points for reachability analysis — objects reachable from a GC root are alive, everything else is garbage. GC root types: local variables on thread stacks, static fields, active threads, JNI references, synchronized monitors. Understanding GC roots is critical for diagnosing memory leaks — if an object is unexpectedly reachable from a root, it won't be collected."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "String Deduplication & Common Tuning",
+        "paragraphs": [
+          "String deduplication (-XX:+UseStringDeduplication, G1GC only) identifies String objects with identical char[] arrays and makes them share a single char[] copy. In typical Java apps, 25-50% of the heap consists of String objects, and many are duplicates. This feature runs during GC and can significantly reduce heap usage without code changes.",
+          "Common tuning scenarios: (1) Frequent Full GC → increase heap or tune generation ratios. (2) Long GC pauses → switch to ZGC or tune G1 pause target. (3) Out of Metaspace → increase -XX:MaxMetaspaceSize or fix classloader leak. (4) High allocation rate → reduce object creation, use object reuse for buffers. Always set -Xms equal to -Xmx to avoid heap resizing overhead."
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "G1GC is the default since Java 9 — good for most applications",
+          "ZGC achieves sub-millisecond pauses with concurrent collection — Java 15+",
+          "Heap layout: Young Gen (Eden + S0 + S1) → Old Gen → Metaspace (off-heap)",
+          "Minor GC: fast, Young Gen only. Major GC: Old Gen. Full GC: everything (avoid!)",
+          "Objects promoted to Old Gen after surviving ~15 Minor GCs (age threshold)",
+          "GC Roots: stack variables, static fields, active threads, JNI refs, monitors",
+          "Set -Xms equal to -Xmx to avoid heap resizing overhead",
+          "-XX:+UseStringDeduplication (G1GC) deduplicates String char[] arrays — saves 10-25% heap",
+          "GC logging (-Xlog:gc) is essential for production monitoring",
+          "Object pooling is rarely needed in modern Java — GC handles short-lived objects efficiently"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the difference between G1GC and ZGC?",
+        "answer": "G1GC divides heap into regions, collects garbage-heavy regions first, and targets configurable pause times (10-200ms). It's general-purpose and the default since Java 9. ZGC is designed for ultra-low latency — pauses are consistently <1ms regardless of heap size (up to 16TB). ZGC uses colored pointers and load barriers to perform most work concurrently. Trade-off: ZGC has slightly lower throughput than G1GC due to barrier overhead. Choose G1 for general use; ZGC for latency-sensitive, large-heap applications."
+      },
+      {
+        "question": "How does generational garbage collection work?",
+        "answer": "The heap is divided into Young and Old generations based on the observation that most objects die young (weak generational hypothesis). Young Gen has Eden + 2 Survivor spaces. New objects go to Eden. When Eden fills, a Minor GC copies live objects to a Survivor space and promotes survivors that have 'aged' past a threshold to Old Gen. Old Gen is collected less frequently (Major GC/Full GC) since objects there are longer-lived. This design is efficient — Minor GC is fast (most Eden objects are dead) and Old Gen collection is infrequent."
+      },
+      {
+        "question": "What are GC roots and why are they important for memory leak analysis?",
+        "answer": "GC roots are the starting points for the garbage collector's reachability analysis. If an object is reachable from any GC root, it's considered alive. GC root types: (1) local variables on thread stacks, (2) static fields of loaded classes, (3) active Thread objects, (4) JNI global references, (5) objects used as synchronized monitors. Memory leaks occur when objects remain reachable from a GC root unintentionally — e.g., a static collection that keeps growing, or a ThreadLocal not removed in a thread pool. Eclipse MAT's 'Path to GC Roots' feature helps diagnose these."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Object Pooling Is Usually Wrong",
+        "mistake": "Creating object pools for frequently used objects (like StringBuffer, small DTOs) thinking it helps GC.",
+        "correct": "Modern GC handles short-lived objects extremely efficiently — Eden space allocation is essentially a pointer bump (as fast as stack allocation). Object pooling adds synchronization overhead, complicates code, and can actually hurt performance. Only pool expensive-to-create resources like database connections, thread pools, or large byte buffers."
+      }
+    ]
+  },
+  {
+    "id": "jit-compilation",
+    "title": "JIT Compilation",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "C1 and C2 Compilers",
+        "paragraphs": [
+          "The JIT (Just-In-Time) compiler converts frequently executed bytecode ('hot spots') into optimized native machine code. HotSpot JVM uses tiered compilation: bytecode is first interpreted, then compiled by C1 (client compiler — fast compilation with basic optimizations), and finally by C2 (server compiler — slower compilation with aggressive optimizations) for the hottest methods.",
+          "C2 performs powerful optimizations: method inlining (replacing call with method body), loop unrolling, escape analysis (allocating objects on stack instead of heap), dead code elimination, and branch prediction hint insertion. These optimizations are why Java's steady-state performance rivals C++ — the JIT has runtime information (hot paths, actual types) that static compilers don't have."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Tiered Compilation Levels",
+        "paragraphs": [
+          "Level 0: Interpreter — baseline, no compilation. Level 1: C1 simple — quick compile, no profiling. Level 2: C1 limited profiling. Level 3: C1 full profiling — collects type and branch statistics. Level 4: C2 — full optimization using profiling data from Level 3. Methods typically progress 0 → 3 → 4.",
+          "The Code Cache stores compiled native code. If it fills up (-XX:ReservedCodeCacheSize), the JIT stops compiling and performance degrades. Monitor with -XX:+PrintCodeCacheStatistics. Default size varies by JVM version (typically 240MB on 64-bit)."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "JIT Compilation Flags",
+        "code": "// View JIT compilation activity\njava -XX:+PrintCompilation -jar app.jar\n\n// Control compilation thresholds\n-XX:CompileThreshold=10000  // invocations before C2 compiles\n\n// Print inlining decisions\n-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining\n\n// Code cache sizing\n-XX:ReservedCodeCacheSize=512m  // increase if code cache fills\n\n// Disable tiered compilation (force C2 from start — slower startup)\n-XX:-TieredCompilation\n\n// GraalVM JIT (alternative)\n-XX:+UnlockExperimentalVMOptions -XX:+UseJVMCICompiler"
+      },
+      {
+        "type": "explanation",
+        "heading": "Escape Analysis — Stack Allocation & Scalar Replacement",
+        "paragraphs": [
+          "Escape analysis is one of C2's most powerful optimizations. It determines whether an object 'escapes' the method that created it: NoEscape (object stays local), ArgEscape (passed as argument but doesn't escape caller), or GlobalEscape (stored in static field, returned, or reachable from escaping object).",
+          "For NoEscape objects, the JIT can: (1) Stack-allocate instead of heap-allocate — no GC needed, freed when method returns. (2) Scalar replacement — decompose the object into its primitive fields, storing each in a register or stack slot. The object never actually exists! (3) Lock elision — remove synchronization on objects that don't escape the thread.",
+          "Example: iterating over a list with a for-each loop creates an Iterator object. If the JIT proves the iterator doesn't escape the loop, it stack-allocates or scalar-replaces it — zero GC pressure. This is why idiomatic Java code performs better than expected."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Escape Analysis in Action",
+        "code": "// This object does NOT escape — JIT can stack-allocate or scalar-replace\npublic double distance(double x1, double y1, double x2, double y2) {\n    Point p = new Point(x2 - x1, y2 - y1); // NoEscape!\n    return Math.sqrt(p.x * p.x + p.y * p.y);\n    // After scalar replacement: no Point object created!\n    // Equivalent to: return Math.sqrt(dx*dx + dy*dy);\n}\n\n// This object DOES escape — must be heap-allocated\npublic Point createPoint(double x, double y) {\n    return new Point(x, y); // GlobalEscape — returned to caller\n}\n\n// Lock elision — synchronized removed for non-escaping objects\npublic String format(int value) {\n    StringBuffer sb = new StringBuffer(); // NoEscape\n    sb.append(\"Value: \").append(value);\n    return sb.toString();\n    // JIT removes StringBuffer's sync because sb doesn't escape!\n}\n\n// Verify escape analysis decisions:\n// java -XX:+UnlockDiagnosticVMOptions -XX:+PrintEscapeAnalysis MyApp"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Tiered compilation: Interpreter → C1 (fast, basic) → C2 (slow, aggressive) for hot methods",
+          "C2 optimizations: inlining, escape analysis, loop unrolling, devirtualization",
+          "Escape analysis enables stack allocation (no GC), scalar replacement (no object), lock elision",
+          "NoEscape objects: stack-allocated or decomposed into registers — zero heap cost",
+          "Code Cache stores compiled code — monitor and size appropriately (-XX:ReservedCodeCacheSize)",
+          "JIT uses runtime profiling data — can outperform static compilers for specific workloads",
+          "Warm-up time is needed for JIT to kick in — first requests are slower (important for benchmarking)",
+          "On-Stack Replacement (OSR): JIT can replace a currently executing interpreted loop with compiled code mid-execution"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is JIT compilation and how does it affect Java performance?",
+        "answer": "JIT (Just-In-Time) compilation converts frequently executed bytecode into native machine code at runtime. HotSpot uses tiered compilation: Level 0 (interpreter) → Level 3 (C1 compiler with profiling) → Level 4 (C2 compiler with aggressive optimization). C2 performs inlining, escape analysis (stack-allocate non-escaping objects), loop optimizations, and devirtualization. This means Java code gets faster as it runs — after warm-up, steady-state performance can rival native languages. The trade-off is warm-up time: first invocations are interpreted (slow)."
+      },
+      {
+        "question": "What is escape analysis and what optimizations does it enable?",
+        "answer": "Escape analysis determines if an object 'escapes' the method or thread that created it. For non-escaping objects, the JIT can: (1) Stack allocation — allocate on the stack instead of heap, freed on method return, no GC needed. (2) Scalar replacement — decompose the object into individual fields stored in registers — the object never exists. (3) Lock elision — remove synchronization on objects that don't escape the thread. Example: a Point object created and used only within a distance() method gets scalar-replaced into two double registers. This is why Java can compete with C++ despite object allocation."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Micro-Benchmarking Without JMH",
+        "mistake": "Measuring performance with System.nanoTime() loops — JIT may optimize away your benchmark code (dead code elimination) or give misleading results from lack of warm-up.",
+        "correct": "Always use JMH (Java Microbenchmark Harness) for micro-benchmarks. It handles warm-up, prevents dead code elimination (Blackhole), manages compiler optimizations, and provides statistically valid results. Never trust hand-written benchmark loops.",
+        "codeExample": "// WRONG — unreliable results\nlong start = System.nanoTime();\nfor (int i = 0; i < 1000000; i++) {\n    doSomething(); // JIT might eliminate this entirely!\n}\nlong elapsed = System.nanoTime() - start;\n\n// RIGHT — use JMH\n@Benchmark\npublic int testMethod(Blackhole bh) {\n    return doSomething(); // JMH prevents elimination\n}"
+      }
+    ]
+  },
+  {
+    "id": "performance-profiling",
+    "title": "Performance Profiling",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "JFR, JMC, and Heap/Thread Dumps",
+        "paragraphs": [
+          "JDK Flight Recorder (JFR) is a low-overhead profiling framework built into the JVM. It records events (GC, compilation, allocations, thread activity, I/O) with <1% overhead — safe for production. JDK Mission Control (JMC) is the GUI tool for analyzing JFR recordings, visualizing GC behavior, hot methods, allocation sites, and thread contention.",
+          "Heap dumps capture the entire heap state at a point in time — analyze with Eclipse MAT or VisualVM to find memory leaks (retained heap, dominator tree). Thread dumps capture all thread stack traces — analyze for deadlocks, long waits, and thread pool exhaustion. Use jstack (thread dump) and jmap (heap dump) or trigger via JMX."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Common Memory Leak Patterns",
+        "paragraphs": [
+          "Memory 'leaks' in Java aren't true leaks (like C/C++) — they're objects that remain reachable despite no longer being needed. Common patterns: (1) Static collections that grow without bounds (static List/Map that's never cleaned). (2) ThreadLocal not removed in thread pools — values persist across request boundaries. (3) Listener/callback registration without deregistration — the listener holds references to large objects.",
+          "(4) Inner class instances holding implicit reference to outer class — anonymous listeners in Android/Swing keep the Activity/Frame alive. (5) Unclosed resources (streams, connections) — finalization is unreliable. (6) Cache without eviction policy — use WeakHashMap, Caffeine with TTL, or bounded LRU. Detection: monitor Old Gen growth in GC logs, take periodic heap dumps, use Eclipse MAT's 'Leak Suspects' report."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Profiling Commands & Production JVM Flags",
+        "code": "// Start JFR recording (production-safe)\njava -XX:StartFlightRecording=duration=60s,filename=profile.jfr \\\n     -jar app.jar\n\n// Take a heap dump\njmap -dump:live,format=b,file=heap.hprof <PID>\n\n// Auto heap dump on OOM\njava -XX:+HeapDumpOnOutOfMemoryError \\\n     -XX:HeapDumpPath=/var/dumps/ -jar app.jar\n\n// Take a thread dump\njstack <PID> > thread_dump.txt\n\n// Production JVM Flags Checklist\njava \\\n  -Xms4g -Xmx4g \\                  # fixed heap (no resizing)\n  -XX:+UseG1GC \\                    # or UseZGC for low latency\n  -XX:MaxGCPauseMillis=200 \\        # G1 pause target\n  -XX:+UseStringDeduplication \\     # reduce string memory (G1)\n  -XX:+HeapDumpOnOutOfMemoryError \\ # auto dump on OOM\n  -XX:HeapDumpPath=/var/dumps/ \\    # dump location\n  -Xlog:gc*:file=gc.log:time \\     # GC logging\n  -XX:+ExitOnOutOfMemoryError \\     # crash on OOM (restart via k8s)\n  -jar app.jar"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "JFR: <1% overhead, production-safe, records GC/threads/alloc/IO events",
+          "JMC: GUI for analyzing JFR recordings — flame graphs, GC analysis, allocation profiling",
+          "Heap dump: snapshot of all objects — find memory leaks with Eclipse MAT",
+          "Thread dump: all thread stacks — detect deadlocks, contention, pool exhaustion",
+          "-XX:+HeapDumpOnOutOfMemoryError is a MUST for production JVMs",
+          "Common leaks: static collections, ThreadLocal in pools, unregistered listeners, unclosed resources",
+          "Use WeakHashMap or Caffeine with TTL for caches — prevent unbounded growth",
+          "async-profiler: low-overhead sampling profiler, generates flame graphs (non-JDK tool)",
+          "jcmd: Swiss-army knife for JVM diagnostics — GC.run, Thread.print, JFR.start"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "How would you diagnose a memory leak in production Java application?",
+        "answer": "Step 1: Monitor GC logs — look for increasing Old Gen usage that doesn't recover after Full GC. Step 2: Take a heap dump (jmap -dump or -XX:+HeapDumpOnOutOfMemoryError). Step 3: Analyze with Eclipse MAT — find the dominator tree (objects retaining the most memory), check retained heap sizes, look at GC roots holding unexpected objects. Step 4: Common culprits: growing static collections, unclosed resources, ThreadLocal not removed, listener registrations without cleanup, caches without eviction policies."
+      },
+      {
+        "question": "What JVM flags should every production Java application have?",
+        "answer": "Essential: (1) -Xms = -Xmx (fixed heap, no resizing overhead). (2) -XX:+HeapDumpOnOutOfMemoryError + -XX:HeapDumpPath (auto dump on OOM for post-mortem analysis). (3) -Xlog:gc* (GC logging for monitoring). (4) -XX:+UseG1GC or -XX:+UseZGC (choose based on latency/throughput needs). Recommended: -XX:+UseStringDeduplication (G1, saves 10-25% heap), -XX:+ExitOnOutOfMemoryError (crash and restart in k8s rather than limping), -XX:MaxMetaspaceSize (prevent unbounded metaspace growth)."
+      }
+    ],
+    "trickyPoints": []
+  },
+  {
+    "id": "foreign-memory",
+    "title": "Foreign Function & Memory API",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Replacing JNI with Modern APIs",
+        "paragraphs": [
+          "The Foreign Function & Memory API (Java 22, finalized) provides safe, efficient access to native code and off-heap memory. It replaces JNI (Java Native Interface), which is unsafe, complex, and requires writing C/C++ wrapper code. The new API is pure Java — no native code needed.",
+          "The Memory API provides MemorySegment (a region of memory — on-heap or off-heap), Arena (manages memory lifecycle — allocates and deallocates in bulk), and MemoryLayout (describes structures like C structs). The Function API enables calling native functions directly from Java using MethodHandle."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Foreign Memory API Usage",
+        "code": "// Allocating off-heap memory\ntry (Arena arena = Arena.ofConfined()) {\n    // Allocate 100 ints (off-heap, no GC pressure)\n    MemorySegment segment = arena.allocate(\n        ValueLayout.JAVA_INT, 100);\n\n    // Write values\n    for (int i = 0; i < 100; i++) {\n        segment.setAtIndex(ValueLayout.JAVA_INT, i, i * 2);\n    }\n\n    // Read values\n    int val = segment.getAtIndex(ValueLayout.JAVA_INT, 50); // 100\n} // Memory automatically freed when Arena closes\n\n// Calling a native function (e.g., strlen from libc)\nLinker linker = Linker.nativeLinker();\nMethodHandle strlen = linker.downcallHandle(\n    linker.defaultLookup().find(\"strlen\").get(),\n    FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)\n);"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Replaces JNI — pure Java, no C/C++ wrappers needed",
+          "MemorySegment: safe access to off-heap memory with bounds checking",
+          "Arena: manages memory lifecycle — confined (single thread), shared (multi-thread), auto, global",
+          "No GC pressure for off-heap allocations — ideal for large data processing",
+          "Linker API calls native C functions directly from Java",
+          "Finalized in Java 22 — production-ready replacement for Unsafe and JNI"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "Why was the Foreign Function & Memory API created?",
+        "answer": "JNI (Java Native Interface) has fundamental problems: (1) Requires writing C/C++ wrapper code, (2) Unsafe — buffer overflows, memory corruption possible, (3) Complex lifecycle management, (4) Platform-specific compilation. The new API provides: pure Java access to native code and memory, safety (bounds-checked access), deterministic memory management (using Arena), and better performance (no JNI overhead). It also replaces sun.misc.Unsafe usage for off-heap memory in libraries like Netty, Lucene, and Chronicle."
+      }
+    ],
+    "trickyPoints": []
+  },
+  {
+    "id": "class-loading",
+    "title": "Class Loading",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Parent Delegation Model",
+        "paragraphs": [
+          "Class loading in Java follows the Parent Delegation Model. When a class needs to be loaded, the classloader first delegates to its parent — only if the parent cannot load it does the child attempt. The hierarchy is: Bootstrap ClassLoader (Core Java, rt.jar/jmod) → Platform ClassLoader (platform modules) → Application ClassLoader (classpath).",
+          "This model ensures: (1) Core Java classes are always loaded by the same loader (preventing java.lang.Object conflicts), (2) Security — malicious code can't replace core classes, (3) Uniqueness — a class is identified by its fully-qualified name + its classloader, meaning the same class loaded by two different loaders are considered different types."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Custom ClassLoaders",
+        "paragraphs": [
+          "Custom classloaders enable advanced scenarios: hot-reloading code without restarting (app servers like Tomcat), loading classes from non-standard sources (databases, networks), implementing plugin systems (OSGi, JPMS modules), and class-level encryption/obfuscation.",
+          "To create a custom classloader, extend ClassLoader and override findClass(String name). Call defineClass() to convert raw bytes into a Class object. Common pitfall: breaking the parent delegation model can lead to ClassCastException where two 'identical' classes are loaded by different loaders — they're considered incompatible types."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Custom ClassLoader",
+        "code": "public class NetworkClassLoader extends ClassLoader {\n    private final String baseUrl;\n\n    public NetworkClassLoader(String baseUrl, ClassLoader parent) {\n        super(parent);  // maintain parent delegation\n        this.baseUrl = baseUrl;\n    }\n\n    @Override\n    protected Class<?> findClass(String name) throws ClassNotFoundException {\n        try {\n            byte[] bytes = downloadClass(name);\n            return defineClass(name, bytes, 0, bytes.length);\n        } catch (IOException e) {\n            throw new ClassNotFoundException(name, e);\n        }\n    }\n\n    private byte[] downloadClass(String className) throws IOException {\n        String path = className.replace('.', '/') + \".class\";\n        URL url = new URL(baseUrl + \"/\" + path);\n        return url.openStream().readAllBytes();\n    }\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Three Phases: Loading → Linking → Initialization",
+        "paragraphs": [
+          "Class loading happens in three distinct phases. Loading: the classloader finds the .class file bytes (from disk, network, or generated), creates a Class object in the method area. Linking has three sub-steps: Verification (ensures bytecode is valid and doesn't violate JVM safety constraints), Preparation (allocates memory for static fields and sets them to default values — 0, null, false), Resolution (resolves symbolic references to direct references — optional, may be lazy).",
+          "Initialization: runs the class initializer (<clinit>) — this executes static field assignments and static blocks in source order. Initialization is lazy and thread-safe — the JVM guarantees a class is initialized at most once, even under concurrent access. This is why the static holder pattern for singletons is thread-safe without explicit synchronization."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "ClassNotFoundException vs NoClassDefFoundError",
+        "paragraphs": [
+          "ClassNotFoundException is a checked exception thrown when you explicitly try to load a class by name (Class.forName(), ClassLoader.loadClass()) and it's not found. This is a recoverable error — you can catch it and try alternatives.",
+          "NoClassDefFoundError is an Error (not Exception) thrown when the JVM tries to load a class that was available at compile-time but not at runtime. This typically means a missing JAR in the classpath, or a class that failed static initialization on a previous attempt. It can also occur when a class depends on another class that can't be loaded. This is NOT recoverable in normal circumstances."
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Three built-in loaders: Bootstrap (core), Platform (extensions), Application (classpath)",
+          "Parent Delegation: always ask parent first — ensures core class integrity",
+          "A class is uniquely identified by name + classloader — same name, different loader = different class",
+          "Custom classloaders: override findClass(), not loadClass() (to preserve delegation)",
+          "Class loading is lazy — a class is loaded only when first referenced",
+          "Three phases: Loading (find bytes) → Linking (verify, prepare, resolve) → Initialization (run static blocks)",
+          "Initialization is thread-safe — JVM guarantees single initialization even under concurrency",
+          "ClassNotFoundException: explicit load failed (checked). NoClassDefFoundError: compile-time class missing at runtime (unchecked)",
+          "Thread context classloader is important for SPI and frameworks crossing classloader boundaries"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the Parent Delegation Model and why does it exist?",
+        "answer": "When a classloader is asked to load a class, it first delegates to its parent recursively up to the Bootstrap loader. Only if no parent can load it does the child attempt. This exists for: (1) Security — prevents malicious code from replacing java.lang.String or System. (2) Uniqueness — ensures core classes have a single definition across the JVM. (3) Consistency — all code sees the same Object, String, Exception classes regardless of which classloader loaded the application code."
+      },
+      {
+        "question": "How can two instances of the same class be incompatible in Java?",
+        "answer": "If the same class (identical bytecode, same fully-qualified name) is loaded by two different classloaders, the JVM treats them as completely unrelated types. Casting between them throws ClassCastException. This is by design — it's how app servers isolate web applications (each app has its own classloader). You can verify with: obj.getClass().getClassLoader() — if two objects' classes have different loaders, they're different types, even if the class files are identical."
+      },
+      {
+        "question": "What is the difference between ClassNotFoundException and NoClassDefFoundError?",
+        "answer": "ClassNotFoundException is a checked exception thrown when explicitly loading a class by name (Class.forName(), ClassLoader.loadClass()) and it can't be found. It's recoverable. NoClassDefFoundError is an Error thrown when the JVM implicitly tries to load a class used in code that was available at compile-time but missing at runtime (missing JAR) or when static initialization of that class previously failed. It's generally not recoverable. Key difference: NotFoundException = explicit load, not found. NoClassDefFound = was there at compile time, gone at runtime."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "ClassCastException with 'Same' Class",
+        "mistake": "Loading a class from two different classloaders and trying to cast between them — they look identical but are different types.",
+        "correct": "A class's identity is name + classloader. If you're getting ClassCastException between what seems like the same class, check getClass().getClassLoader() on both objects. Use a shared parent classloader for classes that need to be compatible across boundaries."
+      }
+    ]
+  }
+]

@@ -1,0 +1,134 @@
+/* ============================================
+   CodeBlock Component — Module CSS
+   ============================================ */
+
+.codeBlock {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.codeLanguage {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--orange);
+  background: rgba(255, 140, 0, 0.12);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.codeTitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  flex: 1;
+}
+
+.copyBtn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copyBtn:hover {
+  color: var(--orange);
+  border-color: rgba(255, 140, 0, 0.3);
+  background: rgba(255, 140, 0, 0.08);
+}
+
+.codePre {
+  padding: 20px;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.codeContent {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre;
+  font-variant-ligatures: none;
+  -webkit-font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+}
+
+/* Syntax highlighting classes */
+:global(.code-keyword) {
+  color: #C792EA;
+  font-weight: 500;
+}
+
+:global(.code-string) {
+  color: #C3E88D;
+}
+
+:global(.code-comment) {
+  color: #546E7A;
+  font-style: italic;
+}
+
+:global(.code-annotation) {
+  color: #FFCB6B;
+}
+
+:global(.code-number) {
+  color: #F78C6C;
+}
+
+:global(.code-literal) {
+  color: #FF5370;
+  font-weight: 500;
+}
+
+:global(.code-line) {
+  display: inline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .codeContent {
+    font-size: 12px;
+  }
+
+  .codePre {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .codeContent {
+    font-size: 11px;
+  }
+
+  .codePre {
+    padding: 12px;
+  }
+
+  .codeHeader {
+    padding: 8px 12px;
+  }
+
+  .codeTitle {
+    display: none;
+  }
+}

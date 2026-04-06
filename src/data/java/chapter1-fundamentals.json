@@ -1,0 +1,973 @@
+[
+  {
+    "id": "jvm-architecture",
+    "title": "JVM Architecture",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "How the JVM Runs Your Code",
+        "paragraphs": [
+          "The Java Virtual Machine is the cornerstone of Java's \"write once, run anywhere\" promise. It's a specification-based abstract computing machine that provides the runtime environment for Java bytecode execution. Understanding JVM architecture is essential because every performance optimization, memory leak, and concurrency issue traces back to how the JVM manages your code internally.",
+          "When you compile a .java file, the javac compiler produces .class files containing bytecode — an intermediate, platform-independent representation. The JVM then loads, verifies, and executes this bytecode at runtime. The three core subsystems are: the ClassLoader Subsystem, the Runtime Data Areas, and the Execution Engine."
+        ]
+      },
+      {
+        "type": "diagram",
+        "title": "JVM Architecture Overview",
+        "layers": [
+          { "icon": "📄", "title": "Java Source Code (.java)", "description": "javac compiler", "color": "#FF8C00" },
+          { "icon": "📦", "title": "Bytecode (.class files)", "description": "Platform-independent instructions", "color": "#3B82F6" },
+          { "icon": "🔄", "title": "ClassLoader Subsystem", "description": "Loading → Linking → Initialization", "color": "#22C55E" },
+          { "icon": "🗄️", "title": "Runtime Data Areas", "description": "Heap, Stack, Metaspace, PC Register, Native Stack", "color": "#A855F7" },
+          { "icon": "⚙️", "title": "Execution Engine", "description": "Interpreter + JIT Compiler + GC", "color": "#EF4444" }
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "ClassLoader Subsystem",
+        "paragraphs": [
+          "The ClassLoader is responsible for loading .class files into memory. It follows the Parent Delegation Model — when a class needs to be loaded, the request is delegated upward through the hierarchy before any loader tries to load it itself. This prevents duplicate classes and ensures core Java classes (like java.lang.Object) are always loaded by the bootstrap loader.",
+          "There are three built-in classloaders: Bootstrap ClassLoader (loads core Java APIs from rt.jar/jmod), Platform ClassLoader (formerly Extension ClassLoader — loads platform-specific modules), and Application ClassLoader (loads classes from the application's classpath). You can also create custom classloaders for advanced use cases like hot-reloading or plugin architectures."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Runtime Data Areas",
+        "paragraphs": [
+          "The JVM divides memory into several distinct areas. The Heap is the shared memory where all object instances and arrays live — this is where garbage collection operates. The Stack is per-thread and stores stack frames for method calls, each containing local variables, operand stack, and a reference to the runtime constant pool.",
+          "Metaspace (replaced PermGen in Java 8) stores class metadata, method data, and the constant pool. Unlike PermGen, Metaspace uses native memory and grows dynamically. The PC Register holds the address of the currently executing JVM instruction per thread. The Native Method Stack handles native method calls (JNI)."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Runtime Data Areas at a Glance",
+        "headers": ["Area", "Scope", "Stores", "GC?"],
+        "rows": [
+          ["Heap", "Shared (all threads)", "Object instances, arrays", "✅ Yes"],
+          ["Stack", "Per thread", "Frames, local vars, operand stack", "❌ No"],
+          ["Metaspace", "Shared", "Class metadata, constant pool", "✅ Partial"],
+          ["PC Register", "Per thread", "Current instruction address", "❌ No"],
+          ["Native Stack", "Per thread", "Native method frames (JNI)", "❌ No"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Execution Engine",
+        "paragraphs": [
+          "The Execution Engine is where bytecode becomes machine-executable instructions. It has three components: the Interpreter reads and executes bytecode line-by-line (fast startup, slow execution), the JIT Compiler compiles frequently executed bytecode ('hot spots') into native machine code (slow startup, fast execution), and the Garbage Collector reclaims memory from unreachable objects.",
+          "HotSpot JVM uses a tiered compilation strategy: initially interprets code, then compiles frequently used methods first with C1 compiler (quick, lightly optimized), and finally with C2 compiler (slower, heavily optimized) for the hottest code paths."
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "JVM is a specification — HotSpot, GraalVM, OpenJ9 are all implementations",
+          "ClassLoaders follow the Parent Delegation Model to prevent class duplication",
+          "Heap is shared across threads; Stack is thread-private",
+          "Metaspace replaced PermGen in Java 8 — it uses native OS memory, not JVM heap",
+          "JIT compiler converts hot bytecode to native code for performance",
+          "Each thread gets its own PC Register, Stack, and Native Stack"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What are the main components of JVM architecture?",
+        "answer": "JVM has three main components: (1) ClassLoader Subsystem — loads, links, and initializes classes, (2) Runtime Data Areas — Heap, Stack, Metaspace, PC Register, Native Stack, and (3) Execution Engine — Interpreter, JIT Compiler, and Garbage Collector. The ClassLoader follows the Parent Delegation Model, meaning it asks its parent loader first before trying to load a class itself."
+      },
+      {
+        "question": "What is the difference between Stack and Heap memory in Java?",
+        "answer": "Stack memory is per-thread, stores method frames with local variables and partial results, and follows LIFO. It's automatically managed — when a method returns, its frame is popped. Heap memory is shared across all threads and stores all object instances. It's managed by the Garbage Collector. Stack is faster (cache-friendly), fixed-size (throws StackOverflowError), while Heap is slower but dynamic (throws OutOfMemoryError)."
+      },
+      {
+        "question": "What replaced PermGen in Java 8 and why?",
+        "answer": "Metaspace replaced PermGen. PermGen had a fixed size (default 64-82MB) and caused frequent OutOfMemoryError: PermGen space errors, especially in applications with many classes (like application servers doing hot reloads). Metaspace uses native OS memory, grows automatically, and has no fixed upper limit by default (though you can set one with -XX:MaxMetaspaceSize). This eliminated an entire class of OOM errors."
+      },
+      {
+        "question": "Explain the Parent Delegation Model in ClassLoading.",
+        "answer": "When a class needs loading, the request flows upward: Application ClassLoader → Platform ClassLoader → Bootstrap ClassLoader. Each loader checks if it already loaded the class, then delegates to its parent. Only if the parent cannot load it does the child attempt to load it. This ensures core Java classes (like Object, String) are always loaded by the Bootstrap loader, preventing malicious replacement and ensuring a single copy of core classes across the JVM."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "PermGen vs Metaspace Confusion",
+        "mistake": "Assuming PermGen still exists in modern Java and tuning -XX:MaxPermSize",
+        "correct": "PermGen was removed in Java 8. Use -XX:MaxMetaspaceSize for Metaspace tuning. If you see PermGen flags in modern JVMs, they're silently ignored.",
+        "codeExample": "// Java 7 and earlier\n-XX:MaxPermSize=256m\n\n// Java 8+\n-XX:MaxMetaspaceSize=256m"
+      },
+      {
+        "title": "Stack vs Heap for primitives inside objects",
+        "mistake": "Thinking all primitives live on the Stack. Primitives that are fields of an object live on the Heap alongside that object.",
+        "correct": "Local primitive variables → Stack. Primitive fields inside objects → Heap (wherever the object lives). The rule is about where the variable is declared, not its type.",
+        "codeExample": "class Example {\n    int x = 10;  // x is on the HEAP (field of object)\n    \n    void method() {\n        int y = 20;  // y is on the STACK (local variable)\n    }\n}"
+      }
+    ]
+  },
+  {
+    "id": "memory-management",
+    "title": "Memory Management",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Stack vs. Heap: The Two Worlds of Java Memory",
+        "paragraphs": [
+          "Every Java application operates in two distinct memory regions. The Stack is the fast, organized, per-thread workspace — perfect for method execution context. The Heap is the large, shared playground where all objects live and where garbage collection happens.",
+          "Understanding this split is critical for debugging memory leaks, optimizing performance, and answering 90% of memory-related interview questions. The stack is LIFO-ordered and automatically managed (no GC needed), while the heap requires garbage collection and is where most memory problems occur."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Object Lifecycle: From Birth to Death",
+        "paragraphs": [
+          "An object's life in Java follows a clear path: Creation (new keyword allocates on heap) → Use (referenced by variable(s) on stack or other objects) → Eligible for GC (no more strong references) → Finalization (if finalize() is overridden — deprecated since Java 9) → Memory reclamation (GC collects).",
+          "The key concept is reachability: an object is alive as long as it can be reached from a GC root (stack variables, static fields, JNI references). Once an object becomes unreachable from all roots, it becomes eligible for garbage collection — but GC timing is non-deterministic."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Object Lifecycle Example",
+        "code": "public class ObjectLifecycle {\n    public static void main(String[] args) {\n        // 1. Object created on Heap, reference 'obj' on Stack\n        MyObject obj = new MyObject();\n\n        // 2. Object is in use — reachable via 'obj'\n        obj.doWork();\n\n        // 3. Reference reassigned — original object is now unreachable\n        obj = null;\n        // Original MyObject is now ELIGIBLE for GC\n        // But GC may not run immediately!\n\n        // 4. Requesting GC (only a suggestion, JVM may ignore)\n        System.gc();\n    }\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Reference Types: Strong, Weak, Soft, Phantom",
+        "paragraphs": [
+          "Java provides four reference types that determine how the GC treats referenced objects. Strong References (default) prevent GC entirely — the object stays alive as long as a strong reference exists. Soft References are collected only when the JVM is running low on memory, making them ideal for caches.",
+          "Weak References are collected at the next GC cycle regardless of memory pressure — WeakHashMap uses this for automatic cleanup. Phantom References are the weakest — the object is already phantom-reachable (basically dead), and PhantomReference is used for post-mortem cleanup actions as a safer alternative to finalize()."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Reference Types in Action",
+        "code": "import java.lang.ref.*;\n\n// Strong Reference — GC will NEVER collect this\nObject strong = new Object();\n\n// Soft Reference — collected only under memory pressure\nSoftReference<Object> soft = new SoftReference<>(new Object());\nObject val = soft.get(); // may return null if collected\n\n// Weak Reference — collected at next GC cycle\nWeakReference<Object> weak = new WeakReference<>(new Object());\nObject val2 = weak.get(); // likely null after GC\n\n// Phantom Reference — for post-mortem cleanup\nReferenceQueue<Object> queue = new ReferenceQueue<>();\nPhantomReference<Object> phantom = \n    new PhantomReference<>(new Object(), queue);\nphantom.get(); // ALWAYS returns null"
+      },
+      {
+        "type": "table",
+        "title": "Reference Types Comparison",
+        "headers": ["Type", "GC Behavior", "get() Returns", "Use Case"],
+        "rows": [
+          ["Strong", "Never collected while referenced", "The object", "Default — normal variables"],
+          ["Soft", "Collected under memory pressure", "Object or null", "Memory-sensitive caches"],
+          ["Weak", "Collected at next GC cycle", "Object or null", "WeakHashMap, canonicalized mappings"],
+          ["Phantom", "Already collected", "Always null", "Post-mortem cleanup (replaces finalize)"]
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Stack memory is per-thread, LIFO, and auto-managed — no GC involved",
+          "All objects live on the Heap — primitives live on Stack only when they're local variables",
+          "An object is eligible for GC when no strong reference chain to any GC root exists",
+          "System.gc() is a suggestion, not a command — JVM can ignore it",
+          "SoftReferences are ideal for caches — they survive until memory pressure",
+          "WeakReferences are collected eagerly — perfect for WeakHashMap patterns",
+          "finalize() is deprecated since Java 9 — use PhantomReference or Cleaner instead"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the difference between Strong, Soft, Weak, and Phantom references?",
+        "answer": "Strong (default): object is never GC'd while referenced. Soft: GC'd only under memory pressure — ideal for caches. Weak: GC'd at the next collection cycle regardless of memory — used in WeakHashMap. Phantom: object is already collected, get() always returns null — used for post-mortem cleanup as a replacement for the deprecated finalize() method."
+      },
+      {
+        "question": "Can you force Garbage Collection in Java?",
+        "answer": "No. System.gc() and Runtime.getRuntime().gc() are merely suggestions to the JVM. The JVM is free to ignore them. In production, you should never rely on explicit GC calls. Modern GC algorithms (G1, ZGC) are highly optimized and manage memory far better than manual intervention. The only thing you can guarantee is that the JVM will run GC before throwing OutOfMemoryError."
+      },
+      {
+        "question": "What is a memory leak in Java? How can it happen if Java has GC?",
+        "answer": "A memory leak in Java occurs when objects are no longer needed by the application but are still reachable from GC roots, preventing collection. Common causes: static collections that grow without bounds, unclosed resources (streams, connections), inner class references to outer class, ThreadLocal not cleaned up, and listener/callback registrations without deregistration. The GC can't help because these objects are technically still 'in use' from its perspective."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "SoftReference vs WeakReference in Caches",
+        "mistake": "Using WeakReference for caching — entries get collected too eagerly, causing constant cache misses and recomputation.",
+        "correct": "Use SoftReference for caches. Soft references survive until the JVM genuinely needs memory, giving your cache a fighting chance. WeakReference is for 'if it happens to still exist, use it' scenarios like canonicalized mappings.",
+        "codeExample": "// WRONG — Cache entries disappear too quickly\nMap<Key, WeakReference<Value>> cache = new HashMap<>();\n\n// RIGHT — Cache entries survive until memory pressure\nMap<Key, SoftReference<Value>> cache = new HashMap<>();"
+      },
+      {
+        "title": "System.gc() is Not Deterministic",
+        "mistake": "Calling System.gc() in production code and expecting immediate memory recovery or using it as a cleanup mechanism.",
+        "correct": "Never depend on System.gc() in application logic. It's a hint, not a command. The JVM's GC runs when it decides to. Design your code to not need explicit GC calls — use proper resource management (try-with-resources) and reference types instead."
+      }
+    ]
+  },
+  {
+    "id": "data-types",
+    "title": "Data Types & Type System",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Primitives vs. Wrapper Classes",
+        "paragraphs": [
+          "Java has 8 primitive types: byte (8-bit), short (16-bit), int (32-bit), long (64-bit), float (32-bit), double (64-bit), char (16-bit Unicode), and boolean. Primitives are stored directly on the stack (when local) and hold actual values — no object overhead, no null.",
+          "Wrapper classes (Integer, Long, Double, etc.) are object representations of primitives. They live on the heap, support null values, and work with generics (List<Integer> is valid, List<int> is not — until Project Valhalla). Java 5 introduced autoboxing/unboxing to silently convert between the two, which creates subtle performance and correctness traps.",
+          "The memory difference is significant: an int takes 4 bytes, but an Integer object takes 16 bytes (object header 12 bytes + 4 bytes for the value). In collections of millions of elements, this overhead adds up massively — one reason libraries like Eclipse Collections provide primitive-specialized collections."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Primitive Types Summary",
+        "headers": ["Type", "Size", "Range", "Default", "Wrapper"],
+        "rows": [
+          ["byte", "8-bit", "-128 to 127", "0", "Byte"],
+          ["short", "16-bit", "-32,768 to 32,767", "0", "Short"],
+          ["int", "32-bit", "-2³¹ to 2³¹ - 1", "0", "Integer"],
+          ["long", "64-bit", "-2⁶³ to 2⁶³ - 1", "0L", "Long"],
+          ["float", "32-bit", "IEEE 754", "0.0f", "Float"],
+          ["double", "64-bit", "IEEE 754", "0.0d", "Double"],
+          ["char", "16-bit", "\\u0000 to \\uFFFF", "\\u0000", "Character"],
+          ["boolean", "1-bit*", "true/false", "false", "Boolean"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Autoboxing, Unboxing & the Integer Cache",
+        "paragraphs": [
+          "Autoboxing converts a primitive to its wrapper automatically (int → Integer). Unboxing does the reverse (Integer → int). While convenient, this conversion has hidden costs: each autobox creates a new object on the heap (outside the cache range), which means GC pressure in loops.",
+          "Java caches Integer objects for values -128 to 127 (configurable via -XX:AutoBoxCacheMax). This means Integer.valueOf(127) == Integer.valueOf(127) is true, but Integer.valueOf(128) == Integer.valueOf(128) is false. This is one of the most commonly tested interview gotchas. Byte, Short, Long also cache -128 to 127. Character caches 0 to 127. Boolean caches TRUE and FALSE."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "The Integer Cache Trap",
+        "code": "// These are TRUE — values within cached range (-128 to 127)\nInteger a = 127;\nInteger b = 127;\nSystem.out.println(a == b);  // true (same cached object)\n\n// These are FALSE — values outside cached range\nInteger c = 128;\nInteger d = 128;\nSystem.out.println(c == d);  // false (different objects!)\n\n// ALWAYS use .equals() for wrapper comparison\nSystem.out.println(c.equals(d));  // true (correct way)\n\n// Dangerous unboxing — NullPointerException\nInteger num = null;\nint x = num;  // NPE! Java calls num.intValue() on null\n\n// Safe unboxing\nint safe = (num != null) ? num : 0;"
+      },
+      {
+        "type": "explanation",
+        "heading": "Type Casting: Widening vs. Narrowing",
+        "paragraphs": [
+          "Widening (implicit): smaller type → larger type. No data loss in most cases. byte → short → int → long → float → double. This happens automatically. However, there IS a subtle precision trap: int → float and long → float/double can lose precision because float has only 24 bits of mantissa (about 7 decimal digits of precision).",
+          "Narrowing (explicit): larger type → smaller type. Potential data loss. Requires an explicit cast. Java truncates to the lower bits using modular arithmetic. A common interview question: what happens when you cast 130 to byte? Answer: -126, because 130 in binary is 10000010, and as a signed byte, the MSB is the sign bit."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Type Casting Behavior",
+        "code": "// Widening — automatic, no data loss\nint i = 42;\nlong l = i;       // int → long (implicit)\ndouble d = l;     // long → double (implicit)\n\n// Widening precision trap!\nint bigInt = 16_777_217;  // 2^24 + 1\nfloat f = bigInt;         // 16777216.0 — lost the last digit!\n// float has only ~7 digits of precision\n\n// Narrowing — explicit cast required\ndouble pi = 3.14;\nint truncated = (int) pi;     // 3 (decimal truncated, not rounded)\n\n// The byte overflow trap\nint big = 130;\nbyte b = (byte) big;          // -126 (wraps around!)\n// 130 in binary: 10000010, as signed byte: -126\n\n// char to int — gives Unicode code point\nchar ch = 'A';\nint code = ch;   // 65"
+      },
+      {
+        "type": "explanation",
+        "heading": "Floating-Point Precision & BigDecimal",
+        "paragraphs": [
+          "float and double use IEEE 754 binary representation, which cannot represent many decimal fractions exactly. The classic example: 0.1 + 0.2 != 0.3 in floating-point arithmetic. This makes float/double completely unsuitable for financial calculations, currency, or any context where exact decimal precision matters.",
+          "Use BigDecimal for exact decimal arithmetic. Critical rules: always construct BigDecimal from strings, never from doubles (new BigDecimal(0.1) stores the imprecise binary value). Use BigDecimal.valueOf(0.1) or new BigDecimal(\"0.1\") for exactness. compareTo() for comparison (equals() considers scale, so 2.0 != 2.00 with equals)."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Floating-Point Traps & BigDecimal",
+        "code": "// IEEE 754 precision issue\nSystem.out.println(0.1 + 0.2);        // 0.30000000000000004\nSystem.out.println(0.1 + 0.2 == 0.3); // false!\n\n// WRONG — BigDecimal from double preserves the imprecision\nBigDecimal bad = new BigDecimal(0.1);\n// 0.1000000000000000055511151231257827021181583404541015625\n\n// RIGHT — BigDecimal from String is exact\nBigDecimal good = new BigDecimal(\"0.1\");  // exactly 0.1\nBigDecimal also = BigDecimal.valueOf(0.1); // also exact\n\n// Correct financial calculation\nBigDecimal price = new BigDecimal(\"19.99\");\nBigDecimal tax = new BigDecimal(\"0.08\");\nBigDecimal total = price.add(price.multiply(tax))\n    .setScale(2, RoundingMode.HALF_UP);  // 21.59"
+      },
+      {
+        "type": "explanation",
+        "heading": "Enums — More Than Constants",
+        "paragraphs": [
+          "Java enums are far more powerful than simple constant lists. They are full classes that can have fields, constructors, methods, and implement interfaces. Each enum constant is an instance of the enum class, created once and cached. Enums are inherently singleton, thread-safe, and serialization-safe.",
+          "Enums can have abstract methods, forcing each constant to provide its own implementation — this is the strategy pattern built into the language. They also work seamlessly with switch statements (and switch expressions in Java 14+) with exhaustiveness checking."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Enums with State and Behavior",
+        "code": "public enum Planet {\n    MERCURY(3.303e+23, 2.4397e6),\n    VENUS(4.869e+24, 6.0518e6),\n    EARTH(5.976e+24, 6.37814e6);\n\n    private final double mass;\n    private final double radius;\n\n    Planet(double mass, double radius) {\n        this.mass = mass;\n        this.radius = radius;\n    }\n\n    double surfaceGravity() {\n        return 6.67300E-11 * mass / (radius * radius);\n    }\n}\n\n// Enum with abstract method — strategy pattern\npublic enum Operation {\n    ADD { public double apply(double a, double b) { return a + b; } },\n    SUB { public double apply(double a, double b) { return a - b; } },\n    MUL { public double apply(double a, double b) { return a * b; } };\n\n    public abstract double apply(double a, double b);\n}\n\ndouble result = Operation.ADD.apply(3, 4);  // 7.0"
+      },
+      {
+        "type": "explanation",
+        "heading": "var — Local Variable Type Inference (Java 10+)",
+        "paragraphs": [
+          "Java 10 introduced var for local variable type inference. The compiler infers the type from the right-hand side of the assignment. var is NOT dynamic typing — the type is fixed at compile time. It reduces verbosity without sacrificing type safety.",
+          "Rules: var can only be used for local variables with initializers. NOT for method parameters, return types, fields, or catch clauses. It cannot be used with diamond operator alone (var list = new ArrayList<>() infers ArrayList<Object>). Best practice: use var when the type is obvious from the right side, avoid when it hurts readability."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "var — Type Inference",
+        "code": "// var infers the type from the right side\nvar name = \"Alice\";         // String\nvar count = 42;             // int\nvar list = new ArrayList<String>();  // ArrayList<String>\nvar map = Map.of(\"a\", 1);   // Map<String, Integer>\n\n// var in enhanced for loop\nfor (var entry : map.entrySet()) {\n    System.out.println(entry.getKey() + \": \" + entry.getValue());\n}\n\n// var with try-with-resources\ntry (var reader = new BufferedReader(new FileReader(\"f.txt\"))) {\n    var line = reader.readLine();\n}\n\n// CANNOT use var:\n// var x;                  // no initializer\n// var y = null;           // can't infer type from null\n// var z = {1, 2, 3};     // array initializer needs type\n// private var field = 5;  // not for fields"
+      },
+      {
+        "type": "explanation",
+        "heading": "Java is Pass-by-Value — Always",
+        "paragraphs": [
+          "Java is ALWAYS pass-by-value. For primitives, the value itself is copied. For objects, the reference (pointer) is copied — not the object. This means you can modify the object a reference points to (since both references point to the same object), but you cannot make the original reference point to a different object.",
+          "This is one of the most misunderstood concepts. When people say 'Java passes objects by reference,' they are wrong. Java passes the reference value (the memory address) by value. The called method gets a copy of the reference. Reassigning the parameter inside the method does not affect the caller's variable."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Pass-by-Value Proof",
+        "code": "// Primitives — value is copied\nvoid increment(int x) { x++; }  // modifies local copy only\nint a = 5;\nincrement(a);\nSystem.out.println(a);  // still 5!\n\n// Objects — reference is copied, object is shared\nvoid addElement(List<String> list) {\n    list.add(\"hello\");  // modifies the SAME object — works\n}\nList<String> myList = new ArrayList<>();\naddElement(myList);\nSystem.out.println(myList);  // [\"hello\"] — object was modified\n\n// But REASSIGNING the reference doesn't affect caller\nvoid reassign(List<String> list) {\n    list = new ArrayList<>();  // local reference changed\n    list.add(\"world\");         // modifies new local list\n}\nreassign(myList);\nSystem.out.println(myList);  // still [\"hello\"] — original unchanged!"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "8 primitives: byte, short, int, long, float, double, char, boolean",
+          "Primitives are stack-allocated (when local), wrappers are heap-allocated objects",
+          "Integer takes 16 bytes vs int's 4 bytes — 4x memory overhead",
+          "Integer cache: -128 to 127 are cached — == works on cached values, fails outside this range",
+          "Always use .equals() for wrapper class comparison, never ==",
+          "Autoboxing in tight loops can kill performance due to object creation overhead",
+          "Narrowing casts truncate bits — 130 cast to byte gives -126, not an error",
+          "int → float widening can lose precision (float has only ~7 digits)",
+          "NEVER use float/double for money — use BigDecimal with String constructor",
+          "Enums can have fields, methods, constructors, and abstract methods — they're full classes",
+          "var (Java 10+) is compile-time type inference, NOT dynamic typing",
+          "Java is ALWAYS pass-by-value — for objects, the reference value is copied, not the object"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "Why does Integer==Integer sometimes return true and sometimes false?",
+        "answer": "Java caches Integer objects for values -128 to 127 via Integer.valueOf(). When you autobox a value in this range, it returns the cached instance. So for values in [-128, 127], == compares the same object reference and returns true. For values outside this range, new Integer objects are created each time, so == compares different references and returns false. This cache is configurable via -XX:AutoBoxCacheMax. Always use .equals() for content comparison."
+      },
+      {
+        "question": "What is autoboxing and what are its performance implications?",
+        "answer": "Autoboxing automatically converts primitives to wrapper objects (int → Integer). Each autobox outside the cache range allocates a new object on the heap (16 bytes for Integer vs 4 bytes for int). In a tight loop processing millions of values, this creates millions of short-lived objects, increasing GC pressure significantly. Also, unboxing a null wrapper throws NullPointerException. Solution: use primitive arrays/streams (IntStream instead of Stream<Integer>) and primitive-specialized collections."
+      },
+      {
+        "question": "Is Java pass-by-value or pass-by-reference?",
+        "answer": "Java is ALWAYS pass-by-value. For primitives, the value is copied — changes inside the method don't affect the caller. For objects, the reference (memory address) is copied, not the object itself. Both the caller and callee point to the same object, so you CAN modify the object's state (like adding to a list). However, reassigning the parameter to a new object inside the method does NOT affect the caller's reference. The proof: swap(a, b) cannot be written in Java to swap two references."
+      },
+      {
+        "question": "Why should you never use float/double for monetary calculations?",
+        "answer": "float and double use IEEE 754 binary floating-point, which cannot represent many decimal fractions exactly. 0.1 + 0.2 gives 0.30000000000000004, not 0.3. For financial calculations, use BigDecimal constructed from String (never from double). Use compareTo() instead of equals() for comparison since BigDecimal's equals() considers scale (2.0 is not equal to 2.00 with equals, but compareTo returns 0)."
+      },
+      {
+        "question": "How are Java enums more powerful than simple constants?",
+        "answer": "Java enums are full classes — they can have private fields, constructors, methods, and implement interfaces. Each constant is a singleton instance (thread-safe, serialization-safe). Enums support abstract methods (strategy pattern — each constant provides its own implementation), can be used in switch with exhaustiveness checking, and work naturally with EnumSet and EnumMap (bitfield-based, extremely performant). They also override toString(), can implement Comparable, and guarantee exactly one instance per constant via serialization support."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "The == vs .equals() Wrapper Trap",
+        "mistake": "Using == to compare Integer/Long wrapper objects, assuming it compares values.",
+        "correct": "== compares object references for wrappers. Due to the Integer cache (-128 to 127), == works for small values but fails for larger ones. Always use .equals() for value comparison.",
+        "codeExample": "Integer a = 127, b = 127;\na == b  // true (cached)\n\nInteger c = 128, d = 128;\nc == d  // false (different objects!)\nc.equals(d)  // true (correct)"
+      },
+      {
+        "title": "NullPointerException from Unboxing",
+        "mistake": "Unboxing a null wrapper object — Java tries to call .intValue() on null.",
+        "correct": "Always check for null before unboxing or use Optional/primitive types when null is possible.",
+        "codeExample": "Integer num = null;\nint x = num; // NullPointerException!\n\n// Safe approach\nint x = (num != null) ? num : 0;"
+      },
+      {
+        "title": "int to float Precision Loss",
+        "mistake": "Assuming widening from int to float is always safe. float has only 24 bits of mantissa (~7 decimal digits).",
+        "correct": "For values larger than 2^24 (16,777,216), int → float loses precision. Use double for exact representation of int values.",
+        "codeExample": "int precise = 16_777_217;  // 2^24 + 1\nfloat f = precise;         // 16777216.0 — wrong!\ndouble d = precise;        // 16777217.0 — correct"
+      },
+      {
+        "title": "BigDecimal from double vs String",
+        "mistake": "Using new BigDecimal(0.1) expecting exact 0.1. The double 0.1 is already imprecise.",
+        "correct": "Always use new BigDecimal(\"0.1\") or BigDecimal.valueOf(0.1) for exact decimal values.",
+        "codeExample": "new BigDecimal(0.1);      // 0.10000000000000000555...\nnew BigDecimal(\"0.1\");    // exactly 0.1\nBigDecimal.valueOf(0.1);  // exactly 0.1"
+      }
+    ]
+  },
+  {
+    "id": "strings",
+    "title": "Strings Deep Dive",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "String Immutability & the String Pool",
+        "paragraphs": [
+          "Strings in Java are immutable — once created, their content cannot be changed. Every modification (concat, replace, toUpperCase) creates a new String object. This design enables thread safety, security (strings used in classloading, networking), and caching (hash codes computed once and stored).",
+          "The String Constant Pool is a special area in the heap (moved from PermGen to Heap in Java 7) that stores unique string literals. When you write String s = \"hello\", Java checks the pool first. If \"hello\" already exists, it returns the existing reference — this is called string interning. The intern() method explicitly adds a runtime string to the pool.",
+          "Immutability has a deep implication: since String content never changes, Java caches the hashCode after the first computation (lazy initialization). This makes Strings exceptionally fast as HashMap/HashSet keys — the hash code is computed only once in the lifetime of the String."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "String Pool Behavior",
+        "code": "// String literals — pool comparison\nString a = \"hello\";\nString b = \"hello\";\nSystem.out.println(a == b);      // true — same pool reference\n\n// new String() — always creates separate heap object\nString c = new String(\"hello\");\nSystem.out.println(a == c);      // false — different objects\nSystem.out.println(a.equals(c)); // true — same content\n\n// intern() — forces pool usage\nString d = c.intern();\nSystem.out.println(a == d);      // true — d points to pool\n\n// Compile-time constant folding\nString e = \"hel\" + \"lo\";         // computed at compile time\nSystem.out.println(a == e);      // true — compiler interns it\n\n// Runtime concatenation — NOT interned\nString f = \"lo\";\nString g = \"hel\" + f;            // computed at runtime\nSystem.out.println(a == g);      // false — new object"
+      },
+      {
+        "type": "explanation",
+        "heading": "Essential String API Methods",
+        "paragraphs": [
+          "Java's String class has many methods you must know for interviews and daily work. charAt(int) returns the character at an index. substring(begin, end) extracts a portion (end is exclusive). indexOf/lastIndexOf find character/substring positions. contains, startsWith, endsWith check for substrings. trim() removes leading/trailing whitespace, strip() (Java 11+) is Unicode-aware and preferred.",
+          "split(regex) divides a string by a pattern — beware that it takes a regex, not a literal. join(delimiter, elements) (Java 8+) combines elements with a delimiter. repeat(n) (Java 11+) repeats the string n times. chars() returns an IntStream for functional processing. isBlank() (Java 11+) checks if the string is empty or contains only whitespace."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "String API — Must-Know Methods",
+        "code": "String s = \"  Hello, World!  \";\n\n// Trimming\ns.trim();            // \"Hello, World!\" (ASCII whitespace only)\ns.strip();           // \"Hello, World!\" (Unicode-aware, Java 11+)\ns.stripLeading();    // \"Hello, World!  \"\ns.stripTrailing();   // \"  Hello, World!\"\n\n// Checking\ns.trim().isEmpty();  // false\n\"  \".isBlank();       // true (Java 11+)\ns.contains(\"World\"); // true\ns.startsWith(\"  H\"); // true\n\n// Searching\n\"abcabc\".indexOf('c');      // 2 (first occurrence)\n\"abcabc\".lastIndexOf('c');  // 5 (last occurrence)\n\"abcabc\".indexOf(\"bc\");     // 1 (substring search)\n\n// Splitting & Joining\n\"a,b,c\".split(\",\");           // [\"a\", \"b\", \"c\"]\n\"a.b.c\".split(\"\\\\.\");         // [\"a\", \"b\", \"c\"] — dot is regex!\nString.join(\"-\", \"a\", \"b\");   // \"a-b\"\n\n// Java 11+ utilities\n\"ha\".repeat(3);       // \"hahaha\"\n\"hello\".chars()       // IntStream of char values\n    .filter(c -> c != 'l')\n    .forEach(c -> System.out.print((char) c));  // \"heo\""
+      },
+      {
+        "type": "explanation",
+        "heading": "StringBuilder vs StringBuffer",
+        "paragraphs": [
+          "StringBuilder and StringBuffer are mutable alternatives for string manipulation. StringBuilder is non-synchronized (fast, not thread-safe) — use it in 99% of cases. StringBuffer is synchronized (slower, thread-safe) — rarely needed since you almost never share a string builder across threads.",
+          "The critical performance insight: string concatenation with + in a loop creates a new String object per iteration. The compiler optimizes simple concatenation using StringBuilder, but inside loops, it creates a new StringBuilder per iteration. For loop concatenation, always use an explicit StringBuilder.",
+          "StringBuilder uses an internal char[] (or byte[] since Java 9). Default capacity is 16 characters. When capacity is exceeded, it doubles the internal array + 2. If you know the approximate final size, use new StringBuilder(capacity) to avoid resizing — this is a common performance optimization in interviews."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "StringBuilder vs String Concatenation",
+        "code": "// BAD — O(n²) time, creates N intermediate String objects\nString result = \"\";\nfor (int i = 0; i < 10000; i++) {\n    result += i;  // new StringBuilder + new String each iteration!\n}\n\n// GOOD — O(n) time, one StringBuilder, no intermediate Strings\nStringBuilder sb = new StringBuilder(50000);  // pre-sized\nfor (int i = 0; i < 10000; i++) {\n    sb.append(i);\n}\nString result = sb.toString();\n\n// StringBuilder chaining\nString csv = new StringBuilder()\n    .append(\"name\").append(\",\")\n    .append(\"age\").append(\",\")\n    .append(\"city\")\n    .toString();  // \"name,age,city\"\n\n// Reverse a string\nString reversed = new StringBuilder(\"hello\").reverse().toString(); // \"olleh\""
+      },
+      {
+        "type": "explanation",
+        "heading": "String Formatting",
+        "paragraphs": [
+          "Java provides several ways to format strings. String.format() uses printf-style format specifiers: %s (string), %d (integer), %f (float), %n (newline), %b (boolean). The formatted() method (Java 15+) is an instance method alternative. MessageFormat is used for locale-aware formatting with indexed parameters.",
+          "For high-performance formatting in hot paths, avoid String.format() as it's relatively slow (parses format string each time). Use StringBuilder.append() chains or String concatenation instead. String.format() is fine for logging, error messages, and infrequent operations."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "String Formatting Options",
+        "code": "// String.format()\nString msg = String.format(\"Hello %s, you are %d years old\", \"Alice\", 30);\nString price = String.format(\"$%.2f\", 19.99);   // \"$19.99\"\nString padded = String.format(\"%10s\", \"hi\");     // \"        hi\" (right-aligned)\nString hex = String.format(\"0x%X\", 255);         // \"0xFF\"\n\n// formatted() — Java 15+ instance method\nString result = \"Name: %s, Age: %d\".formatted(\"Bob\", 25);\n\n// Text Blocks with formatting (Java 15+)\nString json = \"\"\"\n    {\n        \"name\": \"%s\",\n        \"age\": %d\n    }\n    \"\"\".formatted(\"Alice\", 30);"
+      },
+      {
+        "type": "explanation",
+        "heading": "Compact Strings (Java 9+)",
+        "paragraphs": [
+          "Before Java 9, String internally used a char[] array where each character took 2 bytes (UTF-16). Since most strings in real applications contain only Latin-1 characters (ASCII + extended), half the memory was wasted. Java 9 introduced Compact Strings.",
+          "With Compact Strings, the internal representation uses a byte[] array plus a coder flag. If all characters fit in Latin-1 (1 byte each), the coder is LATIN1 and each character uses 1 byte — halving memory usage. If any character requires UTF-16, the coder switches to UTF16 and each character uses 2 bytes. This is completely transparent to developers — no API changes."
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Strings are immutable — every modification creates a new object",
+          "String Pool stores unique literals in the heap (since Java 7)",
+          "\"hello\" == \"hello\" is true (pool), new String(\"hello\") == \"hello\" is false",
+          "Compile-time constant expressions are interned: \"a\" + \"b\" == \"ab\" is true",
+          "Runtime concatenation is NOT interned: str + \"b\" creates a new object",
+          "StringBuilder > StringBuffer in 99% of cases (no synchronization overhead)",
+          "Never concatenate strings with + inside loops — use StringBuilder",
+          "split() takes a regex — split(\".\") matches everything, use split(\"\\\\.\")",
+          "String.intern() can cause memory issues if overused with dynamic strings",
+          "Java 9+ compact strings: Latin-1 chars use 1 byte each, halving memory for ASCII strings",
+          "strip() (Java 11+) is Unicode-aware; trim() only handles ASCII whitespace",
+          "Pre-size StringBuilder when the approximate final length is known"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "Why are Strings immutable in Java?",
+        "answer": "Four key reasons: (1) Security — strings are used in classloading, networking, file paths, and database URLs; mutability could allow injection attacks. (2) Thread safety — immutable objects are inherently thread-safe without synchronization. (3) Hashing — String's hashCode is cached after first computation because content never changes, making Strings fast HashMap keys. (4) String Pool — immutability enables safe sharing of string instances in the constant pool. If strings were mutable, changing one instance would affect all references sharing it."
+      },
+      {
+        "question": "How many String objects are created by: String s = new String(\"abc\")?",
+        "answer": "Up to 2 objects: (1) The literal \"abc\" is checked in the String Pool — if it doesn't exist, it's created there. (2) The new keyword always creates a new String object on the heap regardless of the pool. So if \"abc\" isn't already in the pool, 2 objects are created. If it's already in the pool, only 1 new object is created (the heap copy). The key takeaway: never use new String(\"literal\") — it always creates an unnecessary extra object."
+      },
+      {
+        "question": "What is the difference between == and .equals() for Strings?",
+        "answer": "== compares object references (memory addresses) — it returns true only if both variables point to the exact same String object. .equals() compares the actual character content. String literals are interned in the pool, so \"abc\" == \"abc\" is true (same reference). But new String(\"abc\") == \"abc\" is false (different objects) while new String(\"abc\").equals(\"abc\") is true (same content). Always use .equals() for string comparison unless you intentionally want reference equality."
+      },
+      {
+        "question": "Why is String concatenation with + in a loop O(n²) and how do you fix it?",
+        "answer": "Each += creates a new StringBuilder, copies the existing string into it, appends the new part, then calls toString() to create a new String. For n iterations, the copying grows: 1 + 2 + 3 + ... + n = O(n²) characters copied total. Fix: create ONE StringBuilder before the loop, append inside the loop, and call toString() once after the loop. Pre-size the StringBuilder if you know the approximate final length to avoid internal array resizing."
+      },
+      {
+        "question": "What are Compact Strings in Java 9+ and why were they introduced?",
+        "answer": "Before Java 9, String used char[] (2 bytes per character, UTF-16). Since most real-world strings are ASCII/Latin-1, half the memory was wasted. Java 9+ uses byte[] with a coder flag: LATIN1 (1 byte/char) for strings containing only Latin-1 characters, UTF16 (2 bytes/char) when non-Latin-1 characters exist. This halves memory for most strings with no API changes — it's fully transparent. The JVM automatically selects the right encoding based on content."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "String Pool with == Comparison",
+        "mistake": "Using == to compare strings and getting inconsistent results depending on how the strings were created.",
+        "correct": "Always use .equals() for string comparison. == checks reference equality. Literals are interned (same reference), but new String() or runtime-computed strings are not.",
+        "codeExample": "\"abc\" == \"abc\"              // true (pool)\n\"abc\" == new String(\"abc\")  // false (different objects)\n\"abc\" == (\"ab\" + \"c\")       // true (compile-time constant)\n\nString s = \"c\";\n\"abc\" == (\"ab\" + s)         // false (runtime concat)"
+      },
+      {
+        "title": "String Concatenation in Loops",
+        "mistake": "Using += for string concatenation in a loop, thinking the compiler optimizes it.",
+        "correct": "The compiler uses StringBuilder for simple + concatenation, but inside loops it creates a NEW StringBuilder per iteration. Use an explicit StringBuilder before the loop.",
+        "codeExample": "// This compiles to:\nfor (...) {\n    result = new StringBuilder(result)\n              .append(i).toString(); // new SB each time!\n}"
+      },
+      {
+        "title": "split() Takes a Regex, Not a Literal",
+        "mistake": "Writing \"a.b.c\".split(\".\") and expecting [\"a\", \"b\", \"c\"]. The dot is a regex wildcard matching any character.",
+        "correct": "Escape regex special characters with double backslash. Or use Pattern.quote() for arbitrary delimiters.",
+        "codeExample": "\"a.b.c\".split(\".\");      // [] — empty! dot matches everything\n\"a.b.c\".split(\"\\\\.\");    // [\"a\", \"b\", \"c\"] — escaped\n\"a|b\".split(\"\\\\|\");      // [\"a\", \"b\"] — pipe is also regex\n\n// Safe alternative:\n\"a.b.c\".split(Pattern.quote(\".\"));  // [\"a\", \"b\", \"c\"]"
+      },
+      {
+        "title": "String.intern() Memory Trap",
+        "mistake": "Calling intern() on every dynamic string to 'save memory.' The pool can grow unboundedly and never be GC'd efficiently in older JVMs.",
+        "correct": "Use intern() only for a small, bounded set of known values (like enum-like constants). For large datasets, use a manual HashMap<String,String> cache where you control the lifecycle.",
+        "codeExample": "// DANGEROUS — millions of unique strings in the pool\nfor (String line : millionsOfLines) {\n    map.put(line.intern(), value);  // pool grows endlessly\n}\n\n// SAFE — controlled deduplication\nMap<String,String> dedup = new HashMap<>();\nString canonical = dedup.computeIfAbsent(line, k -> k);"
+      }
+    ]
+  },
+  {
+    "id": "oop-deep-dive",
+    "title": "OOP Deep Dive",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "The Four Pillars of OOP",
+        "paragraphs": [
+          "Object-Oriented Programming in Java rests on four foundational pillars: Encapsulation, Inheritance, Polymorphism, and Abstraction. Every interview starts with 'explain the four pillars,' but surface-level definitions won't cut it. The real test is understanding how these concepts interact, where they break down, what trade-offs each one brings, and how Java implements them internally.",
+          "These aren't just academic concepts — they directly influence how you design classes, manage complexity, write testable code, and build systems that can evolve over time without breaking."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Pillar 1: Encapsulation — Protecting Invariants",
+        "paragraphs": [
+          "Encapsulation is the bundling of data (fields) and the methods that operate on that data into a single unit (class), while restricting direct access to the internal state. It's not just about making fields private — it's about protecting invariants. An invariant is a condition that must always remain true for an object to be in a valid state.",
+          "For example, a BankAccount class has the invariant that balance >= 0 (for a non-overdraft account). If balance were public, any code could set it to -1000, violating the invariant. By making balance private and providing a withdraw() method that checks the balance first, you enforce the invariant at all times.",
+          "Encapsulation also enables you to change the internal representation without breaking client code. If you store a temperature in Celsius internally but later switch to Kelvin, client code using getTemperature() is unaffected — the getter handles conversion."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Encapsulation: Protecting Invariants",
+        "code": "public class BankAccount {\n    private double balance;  // PRIVATE — direct access blocked\n    private final String accountId;\n\n    public BankAccount(String accountId, double initialBalance) {\n        if (initialBalance < 0) throw new IllegalArgumentException(\"Negative initial balance\");\n        this.accountId = accountId;\n        this.balance = initialBalance;\n    }\n\n    // Controlled access — invariant enforced\n    public void withdraw(double amount) {\n        if (amount <= 0) throw new IllegalArgumentException(\"Amount must be positive\");\n        if (amount > balance) throw new InsufficientFundsException();\n        balance -= amount;\n    }\n\n    public void deposit(double amount) {\n        if (amount <= 0) throw new IllegalArgumentException(\"Amount must be positive\");\n        balance += amount;\n    }\n\n    public double getBalance() { return balance; }  // Read-only access\n    public String getAccountId() { return accountId; }  // Immutable field\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Access Modifiers: The Visibility Spectrum",
+        "paragraphs": [
+          "Java provides four access levels that control visibility. Understanding them deeply is critical for encapsulation. private: visible only within the declaring class — use this for internal state. default (package-private, no keyword): visible within the same package — useful for package-internal utilities. protected: visible in same package AND subclasses in any package — used for extension points. public: visible everywhere — use for your API surface.",
+          "A common mistake is making everything public or using protected when package-private would suffice. The rule of thumb: start with the most restrictive access and widen only when necessary. Protected is NOT 'slightly less than public' — it's specifically for inheritance hierarchies where subclasses need access to parent internals."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Access Modifier Visibility Matrix",
+        "headers": ["Modifier", "Same Class", "Same Package", "Subclass (other pkg)", "World"],
+        "rows": [
+          ["private", "✅", "❌", "❌", "❌"],
+          ["default (no keyword)", "✅", "✅", "❌", "❌"],
+          ["protected", "✅", "✅", "✅", "❌"],
+          ["public", "✅", "✅", "✅", "✅"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Pillar 2: Inheritance — The is-a Relationship",
+        "paragraphs": [
+          "Inheritance allows a class (subclass/child) to inherit fields and methods from another class (superclass/parent), establishing an is-a relationship. Java supports single class inheritance (one parent only) but multiple interface implementation. The extends keyword is used for class inheritance, implements for interfaces.",
+          "When a subclass is created, the constructor chain runs top-down: Object → Grandparent → Parent → Child. Every constructor implicitly calls super() as its first statement if you don't write it explicitly. If the parent has no default constructor, the subclass MUST explicitly call a parameterized super() constructor.",
+          "Key rules: private members are inherited but not accessible. Static methods are not overridden, they're hidden. Constructors are NOT inherited. A subclass can access protected and public members of the parent. The final keyword on a class prevents inheritance, on a method prevents overriding."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Constructor Chaining and super/this",
+        "code": "class Vehicle {\n    private String make;\n    private int year;\n\n    Vehicle(String make, int year) {\n        // Implicit: super(); calls Object()\n        this.make = make;\n        this.year = year;\n        System.out.println(\"Vehicle constructor\");\n    }\n}\n\nclass Car extends Vehicle {\n    private int doors;\n\n    Car(String make, int year, int doors) {\n        super(make, year);  // MUST be first statement\n        this.doors = doors;\n        System.out.println(\"Car constructor\");\n    }\n\n    // Constructor chaining with this()\n    Car(String make, int year) {\n        this(make, year, 4);  // Delegates to other constructor\n    }\n}\n\n// Output when calling new Car(\"Toyota\", 2024, 4):\n// Vehicle constructor\n// Car constructor"
+      },
+      {
+        "type": "explanation",
+        "heading": "Pillar 3: Polymorphism — One Interface, Many Forms",
+        "paragraphs": [
+          "Polymorphism means 'many forms.' In Java, it manifests in two ways. Compile-time (static) polymorphism is achieved through method overloading — same method name, different parameter lists. The compiler decides which version to call at compile time based on the reference type and argument types.",
+          "Runtime (dynamic) polymorphism is achieved through method overriding — a subclass provides its own implementation of a parent method. The JVM decides which version to call at runtime based on the actual object type, using a virtual method table (vtable). This is the more powerful and important form.",
+          "The critical distinction that trips up developers: overloading is resolved by the REFERENCE type, overriding is resolved by the OBJECT type. When you have Animal ref = new Dog(), calling ref.sound() uses Dog's overridden method (runtime dispatch), but calling an overloaded method like feed(ref) uses feed(Animal) because ref's declared type is Animal."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Overloading vs Overriding — The Complete Picture",
+        "code": "class Animal {\n    // Method to be OVERRIDDEN\n    void sound() { System.out.println(\"...\"); }\n\n    // OVERLOADED methods — same name, different params\n    void eat(String food) { System.out.println(\"Eating \" + food); }\n    void eat(String food, int qty) { System.out.println(\"Eating \" + qty + \" \" + food); }\n}\n\nclass Dog extends Animal {\n    @Override\n    void sound() { System.out.println(\"Bark\"); }  // OVERRIDING\n\n    // This is OVERLOADING, NOT overriding (different param type)\n    void sound(int volume) { System.out.println(\"BARK!\".repeat(volume)); }\n}\n\n// Runtime polymorphism — resolved by OBJECT type\nAnimal a = new Dog();\na.sound();           // \"Bark\" — Dog's method via vtable\n// a.sound(3);       // COMPILE ERROR — Animal has no sound(int)\n\n// Overloading — resolved by REFERENCE type\nvoid feed(Animal a) { System.out.println(\"Feeding animal\"); }\nvoid feed(Dog d)    { System.out.println(\"Feeding dog\"); }\n\nAnimal ref = new Dog();\nfeed(ref);  // \"Feeding animal\" — reference type is Animal!"
+      },
+      {
+        "type": "explanation",
+        "heading": "Pillar 4: Abstraction — Hiding Complexity",
+        "paragraphs": [
+          "Abstraction is about hiding implementation details and showing only the essential features. In Java, abstraction is achieved through abstract classes and interfaces. An abstract class is a class that cannot be instantiated and can contain both abstract methods (no body) and concrete methods (with body). An interface is a fully abstract contract (before Java 8) that defines what a class should do, not how.",
+          "The key design question is: when to use abstract class vs interface? Use an abstract class when you have shared state (fields) or shared implementation among related classes. Use an interface when you want to define a capability that unrelated classes can implement. Since Java 8, interfaces can have default methods (concrete methods with a body), which blurred the line — but interfaces still cannot have instance state (only constants)."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Abstract Class vs Interface — Complete Comparison",
+        "headers": ["Feature", "Abstract Class", "Interface"],
+        "rows": [
+          ["Instantiation", "❌ Cannot", "❌ Cannot"],
+          ["Constructors", "✅ Yes", "❌ No"],
+          ["Instance fields", "✅ Yes (any access)", "❌ Only public static final constants"],
+          ["Abstract methods", "✅ Yes", "✅ Yes (implicitly public abstract)"],
+          ["Concrete methods", "✅ Yes", "✅ default/static methods (Java 8+)"],
+          ["Access modifiers on methods", "Any", "public only (implicitly)"],
+          ["Multiple inheritance", "❌ Single extends", "✅ Multiple implements"],
+          ["private methods", "✅ Yes", "✅ Yes (Java 9+, for default method helpers)"],
+          ["Use when", "Shared state/behavior among related classes", "Defining a capability for unrelated classes"]
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Abstract Class vs Interface Design",
+        "code": "// ABSTRACT CLASS — shared state + partial implementation\nabstract class Shape {\n    private String color;  // Instance state\n\n    Shape(String color) { this.color = color; }  // Constructor\n\n    abstract double area();        // Subclasses MUST implement\n    abstract double perimeter();   // Subclasses MUST implement\n\n    // Concrete shared behavior\n    void describe() {\n        System.out.println(color + \" shape, area=\" + area());\n    }\n}\n\nclass Circle extends Shape {\n    private double radius;\n    Circle(String color, double radius) { super(color); this.radius = radius; }\n    double area() { return Math.PI * radius * radius; }\n    double perimeter() { return 2 * Math.PI * radius; }\n}\n\n// INTERFACE — capability contract for unrelated classes\ninterface Drawable {\n    void draw();  // implicitly public abstract\n\n    // Default method (Java 8+) — optional override\n    default void drawWithBorder() {\n        draw();\n        System.out.println(\"Drawing border\");\n    }\n}\n\n// A Circle is-a Shape AND has Drawable capability\nclass DrawableCircle extends Shape implements Drawable {\n    DrawableCircle(String color, double r) { super(color); }\n    double area() { return 0; }\n    double perimeter() { return 0; }\n    public void draw() { System.out.println(\"Drawing circle\"); }\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "The final Keyword — Three Uses",
+        "paragraphs": [
+          "The final keyword has three distinct uses in Java. final class: prevents inheritance — no class can extend it. Examples: String, Integer, Math. Use it when subclassing would break invariants. final method: prevents overriding in subclasses — the method's behavior is locked. final variable: the reference cannot be reassigned after initialization (but the object it points to CAN be mutated if it's mutable).",
+          "A common misconception: final does NOT make objects immutable. A final List<String> means you can't reassign the variable to a different list, but you CAN still add, remove, or modify elements in the same list. For true immutability, you need an unmodifiable collection (Collections.unmodifiableList or List.of())."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "final — What It Does and Doesn't Do",
+        "code": "// final class — cannot be extended\nfinal class Immutable {\n    private final int value;\n    Immutable(int v) { this.value = v; }\n    int getValue() { return value; }\n}\n// class Extended extends Immutable {} // COMPILE ERROR\n\n// final method — cannot be overridden\nclass Parent {\n    final void criticalMethod() { /* locked behavior */ }\n}\nclass Child extends Parent {\n    // void criticalMethod() {} // COMPILE ERROR\n}\n\n// final variable — reference can't change, object CAN\nfinal List<String> list = new ArrayList<>();\nlist.add(\"hello\");       // ✅ Object mutation is allowed\nlist.add(\"world\");       // ✅ Still allowed\n// list = new ArrayList<>(); // ❌ COMPILE ERROR — can't reassign\n\n// Effectively final (Java 8+) — lambdas can capture\nString name = \"Java\";  // not declared final, but never reassigned\nRunnable r = () -> System.out.println(name);  // ✅ works"
+      },
+      {
+        "type": "explanation",
+        "heading": "The Object Class — Every Class's Root",
+        "paragraphs": [
+          "Every class in Java implicitly extends java.lang.Object. This gives every object access to critical methods that you must understand deeply: equals(), hashCode(), toString(), clone(), finalize() (deprecated), getClass(), wait(), notify(), notifyAll().",
+          "The equals() and hashCode() contract is the most important: if two objects are equal (a.equals(b) is true), they MUST have the same hash code. The reverse is NOT required — two objects with the same hash code can be unequal (hash collision). Violating this contract breaks HashMap, HashSet, and any hash-based collection. Always override both together.",
+          "toString() should return a concise, human-readable representation. The default is ClassName@hexHashCode which is useless for debugging. Always override it in your domain objects."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "equals() and hashCode() Contract",
+        "code": "public class Employee {\n    private final int id;\n    private final String name;\n\n    public Employee(int id, String name) {\n        this.id = id;\n        this.name = name;\n    }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;                    // Same reference\n        if (o == null || getClass() != o.getClass()) return false;  // Null/type check\n        Employee other = (Employee) o;\n        return id == other.id && Objects.equals(name, other.name);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id, name);  // MUST use same fields as equals()\n    }\n\n    @Override\n    public String toString() {\n        return \"Employee{id=\" + id + \", name='\" + name + \"'}\";\n    }\n}\n\n// Without proper equals/hashCode:\nSet<Employee> set = new HashSet<>();\nset.add(new Employee(1, \"Alice\"));\nset.contains(new Employee(1, \"Alice\"));  // false! (without override)\n// With proper equals/hashCode: returns true"
+      },
+      {
+        "type": "explanation",
+        "heading": "Inner Classes — Four Types",
+        "paragraphs": [
+          "Java supports four types of inner classes. (1) Member Inner Class: a non-static class defined inside another class — it has access to all members of the outer class, including private. It requires an instance of the outer class to be instantiated. (2) Static Nested Class: declared with static — it does NOT have access to instance members of the outer class, only static members. It's essentially a regular class scoped within another for organizational purposes.",
+          "(3) Local Inner Class: defined inside a method — it can access local variables only if they are final or effectively final. (4) Anonymous Inner Class: a class without a name, declared and instantiated in one expression — commonly used before lambdas were introduced. Since Java 8, lambdas replace anonymous inner classes for single-method interfaces."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Composition Over Inheritance",
+        "paragraphs": [
+          "The Liskov Substitution Principle (LSP) states that a subclass should be substitutable for its superclass without altering program correctness. The classic violation: Square extends Rectangle. If Rectangle.setWidth() is expected to not change height, Square breaks this contract.",
+          "Composition over inheritance is a fundamental design guideline. Inheritance creates tight is-a coupling that's hard to change. Composition (has-a) is more flexible — swap implementations at runtime, test in isolation, avoid fragile base class problems. Use inheritance for genuine is-a relationships with shared behavior; prefer composition for everything else."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Composition Over Inheritance",
+        "code": "// FRAGILE: Inheritance — Stack exposes ArrayList methods\nclass BadStack extends ArrayList<Object> {\n    // Users can call add(index, element), remove(index), etc.\n    // Completely breaks Stack abstraction!\n}\n\n// BETTER: Composition — full control over API\nclass Stack<T> {\n    private final List<T> items = new ArrayList<>();  // has-a\n\n    public void push(T item) { items.add(item); }\n    public T pop() {\n        if (isEmpty()) throw new EmptyStackException();\n        return items.remove(items.size() - 1);\n    }\n    public T peek() {\n        if (isEmpty()) throw new EmptyStackException();\n        return items.get(items.size() - 1);\n    }\n    public boolean isEmpty() { return items.isEmpty(); }\n    public int size() { return items.size(); }\n    // Only stack operations exposed — no ArrayList leakage\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "SOLID Principles — The Five Commandments of OOD",
+        "paragraphs": [
+          "SOLID is an acronym for five design principles that produce maintainable, flexible, and testable object-oriented systems. They are: Single Responsibility (SRP), Open/Closed (OCP), Liskov Substitution (LSP), Interface Segregation (ISP), and Dependency Inversion (DIP). Violating any one of them leads to brittle, tightly coupled code that resists change.",
+          "SRP — Single Responsibility Principle: A class should have only one reason to change. If a class handles user validation, database persistence, AND email notification, it has three reasons to change. Refactor into UserValidator, UserRepository, and EmailNotifier. Each class now has one job, one reason to change, and can be tested in isolation.",
+          "OCP — Open/Closed Principle: Software entities should be open for extension but closed for modification. Use polymorphism and abstraction — when you need new behavior, add a new class that implements an interface rather than modifying existing code. The strategy pattern is a textbook OCP implementation.",
+          "LSP — Liskov Substitution Principle: Subtypes must be substitutable for their base types without altering correctness. If code works with Animal, it must work equally well with Dog or Cat. Classic violation: Square extends Rectangle — setting width on a Square also changes height, breaking Rectangle's contract that width and height are independent.",
+          "ISP — Interface Segregation Principle: Clients should not be forced to depend on interfaces they don't use. If an interface has 20 methods but most implementors only need 5, split it into focused interfaces. Example: instead of a fat Machine interface with print(), scan(), fax(), create Printable, Scanable, Faxable interfaces.",
+          "DIP — Dependency Inversion Principle: High-level modules should not depend on low-level modules — both should depend on abstractions. Instead of OrderService directly creating MySQLRepository, inject a Repository interface. This decouples business logic from infrastructure and enables testing with mock implementations."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "SOLID Principles in Java",
+        "code": "// ❌ SRP Violation — class does too many things\nclass UserService {\n    void validateUser(User u) { /* validation logic */ }\n    void saveToDatabase(User u) { /* SQL queries */ }\n    void sendWelcomeEmail(User u) { /* email logic */ }\n}\n\n// ✅ SRP — each class has one responsibility\nclass UserValidator { boolean isValid(User u) { ... } }\nclass UserRepository { void save(User u) { ... } }\nclass EmailService { void sendWelcome(User u) { ... } }\n\n// ✅ OCP — extend via new classes, not modifying existing\ninterface DiscountStrategy {\n    double applyDiscount(double price);\n}\nclass SeasonalDiscount implements DiscountStrategy {\n    public double applyDiscount(double price) { return price * 0.8; }\n}\nclass LoyaltyDiscount implements DiscountStrategy {\n    public double applyDiscount(double price) { return price * 0.9; }\n}\n// Adding new discount? Just add a new class — no existing code changes!\n\n// ✅ ISP — focused interfaces\ninterface Printable { void print(); }\ninterface Scannable { void scan(); }\nclass BasicPrinter implements Printable {\n    public void print() { /* print logic */ }\n    // Not forced to implement scan()!\n}\n\n// ✅ DIP — depend on abstractions\nclass OrderService {\n    private final OrderRepository repo; // interface, not MySQLRepo\n    OrderService(OrderRepository repo) { this.repo = repo; }\n    // Now works with MySQL, Postgres, InMemory — any implementation\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Creating Truly Immutable Classes",
+        "paragraphs": [
+          "Immutability is a critical concept in Java — immutable objects are inherently thread-safe, can be freely shared, and make great Map keys. Java's String is the most famous immutable class. To create your own immutable class, follow this 5-step recipe:",
+          "Step 1: Make the class final (prevents subclasses from adding mutability). Step 2: Make all fields private and final. Step 3: Don't provide setter methods. Step 4: Perform defensive copying in the constructor — if a field references a mutable object (like Date or List), store a copy, not the original. Step 5: Perform defensive copying in getters — return a copy of mutable fields, not the internal reference.",
+          "If you skip defensive copying, external code can mutate your 'immutable' object through the mutable references. For example, if your class stores a Date field and the getter returns the internal Date, callers can call date.setTime() and change the state. Records (Java 16+) handle steps 1-3 automatically, but you still need defensive copies for mutable components."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Immutable Class — Complete Recipe",
+        "code": "// Step 1: final class\npublic final class ImmutablePerson {\n    // Step 2: private final fields\n    private final String name;\n    private final int age;\n    private final List<String> hobbies;\n    private final Date birthDate;\n\n    public ImmutablePerson(String name, int age, List<String> hobbies, Date birthDate) {\n        this.name = name;  // String is already immutable\n        this.age = age;    // primitives are safe\n        // Step 4: Defensive copy in constructor\n        this.hobbies = List.copyOf(hobbies);  // unmodifiable copy\n        this.birthDate = new Date(birthDate.getTime()); // deep copy\n    }\n\n    // Step 3: No setters — only getters\n    public String getName() { return name; }\n    public int getAge() { return age; }\n\n    // Step 5: Defensive copy in getters\n    public List<String> getHobbies() {\n        return Collections.unmodifiableList(hobbies);\n    }\n    public Date getBirthDate() {\n        return new Date(birthDate.getTime()); // return copy\n    }\n}\n\n// With Records (Java 16+) — simpler but needs manual defensive copy\npublic record PersonRecord(String name, int age, List<String> hobbies) {\n    public PersonRecord {\n        hobbies = List.copyOf(hobbies); // compact constructor\n    }\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "The Diamond Problem — Default Method Conflicts",
+        "paragraphs": [
+          "Java allows multiple interface implementation, and since Java 8, interfaces can have default methods with bodies. This creates the diamond problem: what happens when a class implements two interfaces that both define the same default method?",
+          "Java's resolution rules: (1) Class methods always win over interface defaults. (2) If a sub-interface overrides a default from a parent interface, the sub-interface's version wins. (3) If neither rule applies (two unrelated interfaces with the same default), the implementing class MUST override the method explicitly — the compiler forces you to resolve the conflict. You can call a specific interface's default using InterfaceName.super.methodName()."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Diamond Problem Resolution",
+        "code": "interface Flyable {\n    default String move() { return \"Flying\"; }\n}\ninterface Swimmable {\n    default String move() { return \"Swimming\"; }\n}\n\n// COMPILE ERROR without explicit override — ambiguous!\nclass Duck implements Flyable, Swimmable {\n    @Override\n    public String move() {\n        // Must resolve explicitly:\n        return Flyable.super.move(); // choose Flyable's version\n        // or combine:\n        // return Flyable.super.move() + \" and \" + Swimmable.super.move();\n    }\n}\n\n// Rule: Class method always wins over default\nclass Bird implements Flyable {\n    public String move() { return \"Walking\"; } // THIS wins over Flyable.move()\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Essential Design Patterns in Java",
+        "paragraphs": [
+          "Design patterns are reusable solutions to common design problems. You'll encounter these constantly in interviews and real codebases. Here are the five most important patterns every Java developer must know:",
+          "Singleton — ensures a class has exactly one instance. Use: database connection pools, configuration managers, loggers. Since Java 5, the best implementation is the enum approach (thread-safe, serialization-safe, reflection-proof). Alternatively, use a static holder pattern for lazy initialization.",
+          "Builder — constructs complex objects step-by-step. Use: objects with many optional parameters (instead of telescoping constructors). Java's StringBuilder, Stream.Builder, and HttpClient.newBuilder() all use this pattern. Records can be combined with builders for immutability.",
+          "Factory Method — delegates object creation to subclasses or factory methods. Use: when the exact type isn't known until runtime. Examples: List.of(), Optional.of(), Calendar.getInstance(). Abstract Factory extends this to families of related objects.",
+          "Strategy — encapsulates interchangeable algorithms behind an interface. Use: when you need to swap behavior at runtime. Java's Comparator is the classic example — different sorting strategies injected at runtime. Lambda expressions make strategy trivially easy since Java 8.",
+          "Observer — defines a one-to-many dependency so when one object changes state, dependents are notified. Use: event handling, pub-sub, reactive systems. Java's PropertyChangeListener, Swing events, and Spring's ApplicationEvent all use this pattern."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Design Patterns — Java Implementations",
+        "code": "// SINGLETON — Enum approach (Joshua Bloch recommended)\npublic enum DatabasePool {\n    INSTANCE;\n    private final Connection conn = createConnection();\n    public Connection getConnection() { return conn; }\n}\n// Usage: DatabasePool.INSTANCE.getConnection();\n\n// BUILDER — for complex objects\npublic class HttpRequest {\n    private final String url;\n    private final String method;\n    private final Map<String, String> headers;\n\n    private HttpRequest(Builder b) {\n        this.url = b.url; this.method = b.method; this.headers = b.headers;\n    }\n\n    static class Builder {\n        private String url;\n        private String method = \"GET\";\n        private Map<String, String> headers = new HashMap<>();\n\n        Builder(String url) { this.url = url; }\n        Builder method(String m) { this.method = m; return this; }\n        Builder header(String k, String v) { headers.put(k, v); return this; }\n        HttpRequest build() { return new HttpRequest(this); }\n    }\n}\n// Usage: new HttpRequest.Builder(\"https://api.com\").method(\"POST\").build();\n\n// STRATEGY — via Comparator (lambdas make it trivial)\nList<String> names = List.of(\"Charlie\", \"Alice\", \"Bob\");\nnames.stream().sorted(Comparator.naturalOrder());       // alphabetical\nnames.stream().sorted(Comparator.comparingInt(String::length)); // by length\nnames.stream().sorted(Comparator.reverseOrder());       // reverse\n\n// FACTORY METHOD\npublic interface Notification {\n    void send(String message);\n\n    static Notification create(String type) {\n        return switch (type) {\n            case \"email\" -> new EmailNotification();\n            case \"sms\"   -> new SmsNotification();\n            case \"push\"  -> new PushNotification();\n            default -> throw new IllegalArgumentException(\"Unknown: \" + type);\n        };\n    }\n}"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Encapsulation: bundle data + behavior, enforce invariants via access control",
+          "Inheritance: is-a relationship, single class inheritance, constructor chain runs top-down",
+          "Polymorphism: Overloading = compile-time (reference type), Overriding = runtime (object type)",
+          "Abstraction: abstract classes have state + constructors, interfaces define capabilities",
+          "Use @Override annotation always — catches accidental overloading bugs at compile time",
+          "equals()/hashCode() contract: equal objects MUST have the same hash code — override both together",
+          "final class = no subclass, final method = no override, final variable = no reassignment (but object is still mutable)",
+          "Composition > Inheritance for flexibility, testability, and avoiding LSP violations",
+          "Abstract class: shared state among related classes. Interface: capability for unrelated classes",
+          "Private members are inherited but not accessible from the subclass",
+          "SOLID: SRP (one reason to change), OCP (extend don't modify), LSP (subtypes substitutable), ISP (focused interfaces), DIP (depend on abstractions)",
+          "Immutable class recipe: final class + private final fields + no setters + defensive copies in constructor and getters",
+          "Diamond problem resolution: class wins > sub-interface wins > must override explicitly",
+          "Design patterns: Singleton (enum), Builder (fluent API), Factory (creation delegation), Strategy (swappable algorithms), Observer (event notifications)"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "Explain all four pillars of OOP with examples.",
+        "answer": "Encapsulation: bundling data with methods and controlling access via private fields + public methods — e.g., BankAccount with private balance and public withdraw() that validates. Inheritance: child class inherits parent's behavior — e.g., Dog extends Animal, reusing common methods while adding specific ones. Polymorphism: one interface, many forms — method overriding lets Animal ref = new Dog(); ref.sound() call Dog's implementation at runtime. Abstraction: hiding complexity — abstract class Shape defines abstract area() while hiding implementation details, letting Circle and Rectangle implement their own formulas."
+      },
+      {
+        "question": "What is the difference between method overloading and overriding?",
+        "answer": "Overloading: same method name, different parameters, in the same class. Resolved at compile-time based on reference type. Can differ in parameter types, count, or order. Return type alone doesn't count. Overriding: exact same method signature in a subclass. Resolved at runtime via dynamic dispatch based on actual object type. Must have same or covariant return type, same or broader access modifier, and cannot throw broader checked exceptions. Key gotcha: Animal ref = new Dog(); feed(ref) calls feed(Animal) (overloading uses reference type), but ref.sound() calls Dog.sound() (overriding uses object type)."
+      },
+      {
+        "question": "When should you use an abstract class instead of an interface?",
+        "answer": "Use abstract class when: (1) you need shared state (instance fields) among subclasses, (2) you need constructors to enforce initialization, (3) you want to provide a mix of abstract and concrete methods with shared implementation, (4) you want non-public methods (protected/private). Use interface when: (1) defining a capability that unrelated classes can implement (Comparable, Serializable), (2) you need multiple inheritance of type, (3) you're designing an API contract. Since Java 8+, interfaces can have default methods, but they still can't have instance state or constructors."
+      },
+      {
+        "question": "What is the equals() and hashCode() contract? What happens if you violate it?",
+        "answer": "Contract: if a.equals(b) is true, then a.hashCode() == b.hashCode() must be true. The reverse is NOT required (hash collisions are allowed). If you override equals() without hashCode(), objects that are 'equal' will end up in different hash buckets in HashMap/HashSet, making lookups fail. Example: you add Employee(1,'Alice') to a HashSet, then check contains(new Employee(1,'Alice')) — it returns false because the two objects have different hash codes and land in different buckets, even though equals() returns true."
+      },
+      {
+        "question": "What does the final keyword do in Java? Does final make objects immutable?",
+        "answer": "final has three uses: final class (no subclassing — e.g., String), final method (no overriding in subclasses), final variable (reference cannot be reassigned). Crucially, final does NOT make objects immutable. A final List<String> prevents reassigning the variable to a new list, but you can still add/remove elements from that list. For true immutability, you need: (1) final class, (2) all fields private final, (3) no setters, (4) defensive copies of mutable fields in constructor and getters, (5) or use Records (Java 16+) / List.of() for unmodifiable collections."
+      },
+      {
+        "question": "Why should you prefer composition over inheritance?",
+        "answer": "Inheritance creates tight coupling — changes to parent break all children (fragile base class problem). It's inflexible (Java supports only single inheritance), exposes internals (subclass sees protected members), and is decided at compile-time. Composition is flexible (swap implementations at runtime), supports better encapsulation (expose only what's needed), enables independent unit testing via mocking, avoids LSP violations, and scales better. The classic example: Stack extends ArrayList exposes add(index), remove(index) which break stack semantics. Stack with-a-List as a private field only exposes push/pop/peek."
+      },
+      {
+        "question": "Explain the SOLID principles with real-world Java examples.",
+        "answer": "SRP: UserService shouldn't validate, persist, AND notify — split into UserValidator, UserRepository, EmailService. OCP: use a DiscountStrategy interface — add SeasonalDiscount, LoyaltyDiscount without modifying existing code. LSP: Square extends Rectangle violates LSP because setWidth() on Square changes height, breaking Rectangle's contract. ISP: split a fat Machine interface into Printable, Scannable, Faxable so BasicPrinter doesn't implement scan(). DIP: OrderService depends on a Repository interface, not MySQLRepository — swap implementations for testing or changing databases."
+      },
+      {
+        "question": "What is the diamond problem in Java and how is it resolved?",
+        "answer": "The diamond problem occurs when a class implements two interfaces that both define the same default method. Java's resolution: (1) Class's own method always wins over any default. (2) A more specific sub-interface's default wins over a parent interface's default. (3) If two unrelated interfaces have the same default method, the implementing class MUST override it explicitly — the compiler forces resolution. Inside the override, you can call a specific interface's version using InterfaceName.super.methodName()."
+      },
+      {
+        "question": "How do you create a truly immutable class in Java?",
+        "answer": "Five steps: (1) Make the class final (prevents mutable subclasses). (2) Make all fields private and final. (3) Don't provide setters. (4) Defensive copy mutable constructor arguments — store List.copyOf(list), new Date(date.getTime()), not the original references. (5) Defensive copy in getters — return new Date(birthDate.getTime()), not the internal reference. Without defensive copies, callers can mutate internal state through shared mutable references. Records (Java 16+) handle steps 1-3 automatically but still need defensive copies for mutable components."
+      },
+      {
+        "question": "What is the best way to implement a Singleton in Java and why?",
+        "answer": "The enum approach (recommended by Joshua Bloch in Effective Java): 'public enum Singleton { INSTANCE; }'. It's thread-safe (JVM guarantees enum initialization is thread-safe), serialization-safe (enum deserialization always returns the same instance), and reflection-proof (you cannot reflectively create enum instances). Alternatives: static holder pattern (lazy, thread-safe via class loading), double-checked locking with volatile (correct but verbose). Avoid: eager initialization (wastes resources), synchronized getInstance() (unnecessary contention)."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Overloading Resolution Uses Reference Type",
+        "mistake": "Expecting method overloading to use the runtime object type like overriding does.",
+        "correct": "Overloaded methods are resolved at compile-time based on the declared reference type, not the actual object type. This is the opposite of how overriding works.",
+        "codeExample": "void process(Animal a) { /* ... */ }\nvoid process(Dog d) { /* ... */ }\n\nAnimal ref = new Dog();\nprocess(ref); // calls process(Animal) — ref's declared type is Animal"
+      },
+      {
+        "title": "equals() Without hashCode()",
+        "mistake": "Overriding equals() but forgetting to override hashCode(). HashMap and HashSet will malfunction.",
+        "correct": "Always override both. Use Objects.hash() for hashCode and the same fields used in equals(). IDEs can auto-generate both — use them.",
+        "codeExample": "// BROKEN — equals overridden, hashCode not\nSet<Point> set = new HashSet<>();\nset.add(new Point(1, 2));\nset.contains(new Point(1, 2)); // FALSE — different hashCode!\n\n// FIXED — both overridden consistently\n// Now set.contains(new Point(1, 2)) returns TRUE"
+      },
+      {
+        "title": "final Does NOT Mean Immutable",
+        "mistake": "Thinking final List<String> list means the list cannot be modified.",
+        "correct": "final prevents reassignment of the variable, not mutation of the object. You can still call list.add(), list.remove(). For true immutability, use List.of() or Collections.unmodifiableList().",
+        "codeExample": "final List<String> list = new ArrayList<>();\nlist.add(\"hello\");  // ✅ Works — object mutation\nlist = new ArrayList<>();  // ❌ Compile error — reassignment\n\n// Truly immutable:\nList<String> immutable = List.of(\"a\", \"b\");\nimmutable.add(\"c\"); // throws UnsupportedOperationException"
+      },
+      {
+        "title": "Covariant Return Types",
+        "mistake": "Thinking overridden methods must have the exact same return type.",
+        "correct": "Since Java 5, overridden methods can have a covariant return type — the return type can be a subclass of the parent's return type. Useful for builder/fluent patterns.",
+        "codeExample": "class Animal {\n    Animal create() { return new Animal(); }\n}\nclass Dog extends Animal {\n    @Override\n    Dog create() { return new Dog(); } // Covariant return — valid!\n}"
+      }
+    ]
+  },
+  {
+    "id": "control-flow",
+    "title": "Control Flow & Modern Syntax",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Switch Expressions (Java 14+)",
+        "paragraphs": [
+          "Java 14 finalized switch expressions, a major upgrade over the old switch statement. Switch expressions can return a value, use -> arrow syntax (no fall-through), and support multiple case labels. The yield keyword returns a value from a block in a switch expression.",
+          "This eliminates the need for break statements and the bugs caused by fall-through behavior. It also enables exhaustiveness checking — if a switch doesn't cover all possible values, the compiler flags it."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Modern Switch Expressions",
+        "code": "// Old style — fall-through prone\nswitch (day) {\n    case MONDAY:\n    case FRIDAY:\n        System.out.println(\"Work hard\");\n        break; // forget this and you get fall-through!\n    case SATURDAY:\n        System.out.println(\"Rest\");\n        break;\n}\n\n// New style — expression with arrow syntax\nString activity = switch (day) {\n    case MONDAY, FRIDAY -> \"Work hard\";\n    case SATURDAY, SUNDAY -> \"Rest\";\n    default -> \"Normal day\";\n};\n\n// With yield for complex blocks\nint result = switch (status) {\n    case \"SUCCESS\" -> 1;\n    case \"RETRY\" -> {\n        log(\"Retrying...\");\n        yield 0;  // yield returns value from block\n    }\n    default -> -1;\n};"
+      },
+      {
+        "type": "explanation",
+        "heading": "Pattern Matching for instanceof (Java 16+)",
+        "paragraphs": [
+          "Pattern matching eliminates the need for explicit casting after an instanceof check. Instead of checking the type and then casting in a separate line, you do both in one expression. This reduces boilerplate and eliminates ClassCastException bugs from copy-paste errors.",
+          "The pattern variable is scoped to the branch where the pattern matches — this is called flow scoping. With && the variable is available in the right operand. With || it's NOT available. With negation (!), the variable is available OUTSIDE the if block (after return/throw)."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Pattern Matching for instanceof",
+        "code": "// Old style — verbose and error-prone\nif (obj instanceof String) {\n    String s = (String) obj;\n    System.out.println(s.length());\n}\n\n// New style — pattern variable binding\nif (obj instanceof String s) {\n    System.out.println(s.length()); // s is already cast\n}\n\n// With negation — variable scoped to else\nif (!(obj instanceof String s)) {\n    return; // s is NOT in scope here\n}\n// s IS in scope here (flow scoping)\nSystem.out.println(s.toUpperCase());\n\n// Guard conditions\nif (obj instanceof String s && s.length() > 5) {\n    System.out.println(\"Long string: \" + s);\n}\n\n// Switch pattern matching (Java 21)\nString result = switch (obj) {\n    case Integer i -> \"Int: \" + i;\n    case String s when s.length() > 5 -> \"Long string\";\n    case String s -> \"Short: \" + s;\n    case null -> \"null\";\n    default -> \"Unknown\";\n};"
+      },
+      {
+        "type": "explanation",
+        "heading": "Exception Hierarchy: Checked vs Unchecked",
+        "paragraphs": [
+          "Java's exception hierarchy starts at Throwable, which has two children: Error (unrecoverable JVM problems like OutOfMemoryError, StackOverflowError — never catch these) and Exception (recoverable conditions your code should handle). Exception has a special child: RuntimeException, which is the root of unchecked exceptions.",
+          "Checked exceptions (Exception subclasses that are NOT RuntimeException) MUST be either caught with try-catch or declared with throws in the method signature. The compiler enforces this. Examples: IOException, SQLException, ClassNotFoundException. Unchecked exceptions (RuntimeException subclasses) do NOT require explicit handling. Examples: NullPointerException, IllegalArgumentException, ArrayIndexOutOfBoundsException.",
+          "The design philosophy: checked exceptions represent recoverable conditions the caller can reasonably handle (file not found, network timeout). Unchecked exceptions represent programming errors (null dereference, invalid argument). Modern Java frameworks (Spring, etc.) increasingly prefer unchecked exceptions for cleaner APIs."
+        ]
+      },
+      {
+        "type": "diagram",
+        "title": "Exception Hierarchy",
+        "layers": [
+          { "icon": "🔺", "title": "Throwable", "description": "Root of all exceptions and errors", "color": "#EF4444" },
+          { "icon": "💥", "title": "Error (Unchecked)", "description": "OutOfMemoryError, StackOverflowError — don't catch", "color": "#DC2626" },
+          { "icon": "⚠️", "title": "Exception (Checked)", "description": "IOException, SQLException — must declare or catch", "color": "#F59E0B" },
+          { "icon": "🐛", "title": "RuntimeException (Unchecked)", "description": "NullPointerException, IllegalArgumentException — programming bugs", "color": "#3B82F6" }
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "try-with-resources (Java 7+)",
+        "paragraphs": [
+          "try-with-resources automatically closes any resource that implements AutoCloseable when the try block exits (normally or via exception). This eliminates the need for explicit finally blocks to close resources, which was a major source of resource leaks before Java 7.",
+          "Multiple resources can be declared in a single try statement, separated by semicolons. They are closed in reverse order of declaration. If both the try block and the close() method throw exceptions, the close exception is suppressed (retrievable via getSuppressed()). Since Java 9, you can use effectively final variables declared outside the try statement."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "try-with-resources Patterns",
+        "code": "// BAD — manual resource management (pre-Java 7)\nBufferedReader reader = null;\ntry {\n    reader = new BufferedReader(new FileReader(\"file.txt\"));\n    String line = reader.readLine();\n} catch (IOException e) {\n    e.printStackTrace();\n} finally {\n    if (reader != null) {\n        try { reader.close(); } catch (IOException e) { /* swallowed! */ }\n    }\n}\n\n// GOOD — try-with-resources (Java 7+)\ntry (BufferedReader reader = new BufferedReader(new FileReader(\"file.txt\"))) {\n    String line = reader.readLine();\n} catch (IOException e) {\n    e.printStackTrace();\n}\n// reader is automatically closed — even if exception thrown\n\n// Multiple resources — closed in reverse order\ntry (\n    Connection conn = DriverManager.getConnection(url);\n    PreparedStatement stmt = conn.prepareStatement(sql);\n    ResultSet rs = stmt.executeQuery()\n) {\n    while (rs.next()) { /* process */ }\n}\n// rs closed first, then stmt, then conn"
+      },
+      {
+        "type": "explanation",
+        "heading": "Custom Exceptions & Exception Chaining",
+        "paragraphs": [
+          "Create custom exceptions for domain-specific error conditions. Extend Exception for checked exceptions, RuntimeException for unchecked. Always provide a constructor that accepts a message and a cause (Throwable) — this enables exception chaining, which preserves the full error trail.",
+          "Exception chaining is critical for debugging: when you catch a low-level exception (like SQLException) and throw a higher-level one (like DataAccessException), always pass the original as the cause. Without chaining, you lose the root cause and debugging becomes nearly impossible."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Custom Exceptions & Exception Chaining",
+        "code": "// Custom unchecked exception\npublic class UserNotFoundException extends RuntimeException {\n    private final String userId;\n\n    public UserNotFoundException(String userId) {\n        super(\"User not found: \" + userId);\n        this.userId = userId;\n    }\n\n    public UserNotFoundException(String userId, Throwable cause) {\n        super(\"User not found: \" + userId, cause);\n        this.userId = userId;\n    }\n\n    public String getUserId() { return userId; }\n}\n\n// Exception chaining — preserving root cause\ntry {\n    User user = database.findById(id);\n} catch (SQLException e) {\n    // WRONG: throw new DataAccessException(\"DB error\"); — loses cause!\n    // RIGHT: chain the original exception\n    throw new DataAccessException(\"Failed to query user \" + id, e);\n}\n\n// Multi-catch (Java 7+)\ntry {\n    processFile(path);\n} catch (FileNotFoundException | PermissionException e) {\n    log.error(\"File access error: \" + e.getMessage());\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Exception Best Practices",
+        "paragraphs": [
+          "Never catch Throwable or Exception broadly — you'll swallow errors and runtime exceptions. Catch the most specific exception type possible. Never use exceptions for control flow (e.g., catching ArrayIndexOutOfBoundsException instead of checking array length) — exceptions are expensive due to stack trace generation.",
+          "Always clean up resources in finally or use try-with-resources. Log exceptions at the handling point with full stack traces. Don't log-and-rethrow the same exception at multiple layers — this creates duplicate log entries. Either handle it (log + recover) or rethrow it (let the caller handle), never both."
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Switch expressions (Java 14+) return values and eliminate fall-through bugs",
+          "Arrow syntax (->) doesn't need break; colon syntax (:) still has fall-through",
+          "yield returns a value from a block inside a switch expression",
+          "Pattern matching instanceof (Java 16+) combines type check + cast in one expression",
+          "Pattern variables use flow scoping — available only where the match is guaranteed",
+          "Switch pattern matching (Java 21) combines both features for powerful type-based dispatch",
+          "Checked exceptions must be caught or declared; unchecked (RuntimeException) don't",
+          "Error subclasses (OutOfMemoryError, StackOverflowError) should NEVER be caught",
+          "try-with-resources (Java 7+) auto-closes AutoCloseable resources — always prefer this",
+          "Always chain exceptions — pass the cause when wrapping lower-level exceptions",
+          "Never use exceptions for control flow — they're expensive (stack trace capture)",
+          "Multi-catch (Java 7+): catch (IOException | SQLException e) — reduces duplication"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What are the advantages of switch expressions over switch statements?",
+        "answer": "Switch expressions: (1) Return a value directly — can assign result to a variable. (2) Arrow syntax eliminates fall-through bugs — no need for break. (3) Multiple case labels supported — case MONDAY, FRIDAY ->. (4) Exhaustiveness checking — compiler ensures all cases are covered. (5) yield keyword for returning values from complex blocks. The old switch statement remains for when you intentionally want side effects or fall-through."
+      },
+      {
+        "question": "What is the difference between checked and unchecked exceptions?",
+        "answer": "Checked exceptions (IOException, SQLException) extend Exception but not RuntimeException. The compiler forces you to catch them or declare them with throws — they represent recoverable conditions. Unchecked exceptions (NullPointerException, IllegalArgumentException) extend RuntimeException — no compile-time enforcement, they represent programming bugs. Error (OutOfMemoryError) is also unchecked but represents JVM problems you should never catch. Modern frameworks prefer unchecked exceptions for cleaner APIs."
+      },
+      {
+        "question": "Explain try-with-resources and why it's better than try-finally.",
+        "answer": "try-with-resources (Java 7+) automatically closes any AutoCloseable resource when the try block exits. It's better because: (1) No risk of forgetting to close resources. (2) No need for verbose finally blocks. (3) Proper handling of suppressed exceptions — if both try body and close() throw, close exception is suppressed and attached via getSuppressed(). In try-finally, the finally exception overwrites the original, losing the root cause. (4) Multiple resources are closed in reverse declaration order, guaranteed."
+      },
+      {
+        "question": "Explain pattern matching for instanceof and its scoping rules.",
+        "answer": "Pattern matching for instanceof (Java 16+) combines type checking and casting: if (obj instanceof String s) makes 's' available as a String without casting. Scoping is based on flow analysis: the pattern variable is only available where the match is guaranteed. With && it's available in the right operand and the if body. With || it's NOT available (match isn't guaranteed). With negation (!), the variable is available OUTSIDE the if body (in else or after return/throw). Java 21 extends this to switch statements with guarded patterns."
+      },
+      {
+        "question": "What is exception chaining and why is it important?",
+        "answer": "Exception chaining preserves the full error trail when you catch a low-level exception and throw a higher-level one. Always pass the original exception as the cause: throw new ServiceException('message', originalException). Without chaining, the root cause is lost permanently — you see 'DataAccessException: failed' but have no idea it was caused by a ConnectionTimeoutException. The cause is accessible via getCause() and prints in the stack trace as 'Caused by:'. Never throw a new exception without the cause."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Switch Expression Exhaustiveness",
+        "mistake": "Omitting the default case in a switch expression on non-enum types — causes a compilation error.",
+        "correct": "Switch expressions MUST be exhaustive. For enum types, covering all constants is sufficient. For String, int, or Object, you must include a default case. This is different from switch statements which can be non-exhaustive.",
+        "codeExample": "// Compilation error — not exhaustive\nString x = switch (obj) {\n    case \"A\" -> \"Alpha\";\n    // ERROR: no default!\n};\n\n// Correct\nString x = switch (obj) {\n    case \"A\" -> \"Alpha\";\n    default -> \"Unknown\";\n};"
+      },
+      {
+        "title": "Exception Swallowing in finally",
+        "mistake": "Throwing a new exception in a finally block or returning from finally — this swallows the original exception from the try block.",
+        "correct": "Never throw or return from finally. Use try-with-resources instead of manual finally for cleanup. The finally exception silently replaces the try exception, losing the original error.",
+        "codeExample": "// DANGEROUS — original IOException is LOST\ntry {\n    throw new IOException(\"important!\");\n} finally {\n    throw new RuntimeException(\"oops\");\n    // Only RuntimeException propagates — IOException gone!\n}\n\n// ALSO DANGEROUS\ntry {\n    throw new IOException();\n} finally {\n    return;  // Exception swallowed entirely!"
+      },
+      {
+        "title": "Exceptions for Control Flow",
+        "mistake": "Using try-catch for normal control flow instead of conditional checks. Exceptions are extremely expensive due to stack trace capture.",
+        "correct": "Use conditional checks (if/else, Optional) for expected conditions. Reserve exceptions for truly exceptional, unexpected situations.",
+        "codeExample": "// BAD — expensive, 100x slower\ntry {\n    int val = Integer.parseInt(input);\n} catch (NumberFormatException e) {\n    val = defaultValue;\n}\n\n// GOOD — check first\nif (input.matches(\"-?\\\\d+\")) {\n    int val = Integer.parseInt(input);\n} else {\n    val = defaultValue;\n}"
+      }
+    ]
+  }
+]

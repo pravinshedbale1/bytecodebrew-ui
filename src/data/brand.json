@@ -1,0 +1,20 @@
+{
+  "name": "ByteCodeBrew",
+  "tagline": "Code · Connect · Create",
+  "logo": "/logo.png",
+  "logoAlt": "ByteCodeBrew",
+  "socialLinks": [
+    {
+      "label": "Follow ByteCodeBrew on Instagram",
+      "url": "https://instagram.com/bytecodebreww",
+      "text": "@bytecodebreww"
+    },
+    {
+      "label": "Visit ByteCodeBrew website",
+      "url": "https://bytecodebrew.com",
+      "text": "bytecodebrew.com"
+    }
+  ],
+  "quote": "The best engineers don't just memorize — they understand the why behind every abstraction.",
+  "copyrightTemplate": "© {year} ByteCodeBrew. All rights reserved."
+}

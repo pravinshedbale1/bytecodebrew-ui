@@ -1,0 +1,130 @@
+/* ============================================
+   InterviewCard Component — Module CSS
+   ============================================ */
+
+.card {
+  background: rgba(255, 140, 0, 0.04);
+  border: 1px solid rgba(255, 140, 0, 0.12);
+  border-radius: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.card:hover {
+  border-color: rgba(255, 140, 0, 0.3);
+  background: rgba(255, 140, 0, 0.06);
+}
+
+.cardOpen {
+  border-color: rgba(255, 140, 0, 0.25);
+  background: rgba(255, 140, 0, 0.06);
+}
+
+.questionRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.qIcon {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--orange);
+  background: rgba(255, 140, 0, 0.15);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.questionText {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.toggle {
+  font-family: 'Sora', sans-serif;
+  font-size: 20px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  line-height: 1;
+  width: 24px;
+  text-align: center;
+}
+
+.toggleOpen {
+  transform: rotate(45deg);
+  color: var(--orange);
+}
+
+.answerSection {
+  animation: fadeSlideIn 0.3s ease both;
+}
+
+.answerDivider {
+  height: 1px;
+  background: rgba(255, 140, 0, 0.12);
+  margin: 14px 0;
+}
+
+.answerContent {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.aIcon {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--green);
+  background: rgba(34, 197, 94, 0.15);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.answerText {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 14px 16px;
+  }
+
+  .questionText {
+    font-size: 14px;
+  }
+
+  .answerText {
+    font-size: 13px;
+  }
+}

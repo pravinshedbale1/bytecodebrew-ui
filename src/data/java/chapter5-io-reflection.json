@@ -1,0 +1,308 @@
+[
+  {
+    "id": "standard-io",
+    "title": "Standard I/O & Serialization",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Byte Streams vs Character Streams",
+        "paragraphs": [
+          "Java I/O has two families: byte streams (InputStream/OutputStream — for binary data like images, files) and character streams (Reader/Writer — for text data with charset handling). Character streams internally use byte streams but add encoding/decoding via charset (UTF-8, UTF-16, etc.).",
+          "The Decorator Pattern is fundamental to Java I/O design. You wrap base streams with additional functionality: BufferedInputStream wraps FileInputStream for buffered reads, ObjectInputStream wraps for deserialization, DataInputStream wraps for primitive type reading. This composable design is flexible but can feel verbose."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "I/O Patterns & try-with-resources",
+        "code": "// Always use try-with-resources (Java 7+)\ntry (BufferedReader reader = new BufferedReader(\n        new FileReader(\"data.txt\"))) {\n    String line;\n    while ((line = reader.readLine()) != null) {\n        process(line);\n    }\n} // reader.close() called automatically — even on exception\n\n// Modern file reading (Java 11+)\nString content = Files.readString(Path.of(\"data.txt\"));\nList<String> lines = Files.readAllLines(Path.of(\"data.txt\"));\n\n// Streaming large files (memory-efficient)\ntry (Stream<String> lines = Files.lines(Path.of(\"large.txt\"))) {\n    lines.filter(l -> l.contains(\"ERROR\"))\n         .forEach(System.out::println);\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Serialization: Power and Danger",
+        "paragraphs": [
+          "Serialization (Serializable interface) converts objects to byte streams for storage or transmission. While convenient, it has critical security risks — deserialization can execute arbitrary code if the byte stream is crafted maliciously. This is why Java's security team considers Serializable a long-term security liability.",
+          "Modern alternatives: JSON (Jackson/Gson), Protocol Buffers, or record serialization. If you must use Serializable, always define serialVersionUID, consider implementing readObject/writeObject for validation, and use ObjectInputFilter (Java 9+) to whitelist allowed classes during deserialization."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Path & Files API — Modern File I/O (NIO.2)",
+        "paragraphs": [
+          "Java 7 introduced java.nio.file.Path and java.nio.file.Files as the modern replacement for java.io.File. Path is immutable and represents a file system path. Files provides static utility methods for all common file operations — read, write, copy, move, delete, walk, and attribute queries.",
+          "Key advantages over java.io.File: Path is immutable and composable (resolve, relativize, normalize). Files methods throw descriptive IOExceptions (instead of returning boolean). Files.walk() and Files.find() enable recursive directory traversal as lazy streams. WatchService monitors directories for changes (create, modify, delete) — useful for hot-reload, config watchers, and file sync."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Path/Files API & WatchService",
+        "code": "// Path operations\nPath path = Path.of(\"/home/user/docs/file.txt\");\npath.getFileName();      // file.txt\npath.getParent();        // /home/user/docs\npath.resolve(\"other.txt\"); // /home/user/docs/other.txt\npath.relativize(Path.of(\"/home/user\")); // ../\n\n// File operations with Files utility\nString content = Files.readString(path);         // read entire file\nList<String> lines = Files.readAllLines(path);   // read all lines\nFiles.writeString(path, \"data\", StandardOpenOption.APPEND); // append\nFiles.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);\nFiles.move(src, dest, StandardCopyOption.ATOMIC_MOVE);\nFiles.delete(path);  // throws if not exists\nFiles.deleteIfExists(path); // no exception\n\n// Walking directory trees (lazy stream!)\ntry (Stream<Path> tree = Files.walk(Path.of(\"/project\"))) {\n    List<Path> javaFiles = tree\n        .filter(p -> p.toString().endsWith(\".java\"))\n        .toList();\n}\n\n// Files.find() — walk with filter built-in\ntry (Stream<Path> found = Files.find(Path.of(\"/logs\"), 5,\n        (path, attrs) -> attrs.size() > 1_000_000)) { // files > 1MB\n    found.forEach(System.out::println);\n}\n\n// WatchService — monitor directory for changes\nWatchService watcher = FileSystems.getDefault().newWatchService();\nPath.of(\"/config\").register(watcher,\n    StandardWatchEventKinds.ENTRY_MODIFY,\n    StandardWatchEventKinds.ENTRY_CREATE);\n\nwhile (true) {\n    WatchKey key = watcher.take(); // blocks until event\n    for (WatchEvent<?> event : key.pollEvents()) {\n        System.out.println(event.kind() + \": \" + event.context());\n    }\n    key.reset(); // ready for next events\n}"
+      },
+      {
+        "type": "table",
+        "title": "Serialization Alternatives Comparison",
+        "headers": ["Format", "Speed", "Size", "Schema", "Readability", "Best For"],
+        "rows": [
+          ["Java Serializable", "Slow", "Large", "Java-only", "❌ Binary", "Legacy code, RMI"],
+          ["JSON (Jackson)", "Medium", "Medium", "Optional", "✅ Human-readable", "REST APIs, configs"],
+          ["Protocol Buffers", "Fast", "Small", "Required (.proto)", "❌ Binary", "High-perf microservices"],
+          ["Avro", "Fast", "Small", "Embedded", "❌ Binary", "Big data (Hadoop/Kafka)"],
+          ["MessagePack", "Fast", "Small", "Optional", "❌ Binary", "Compact JSON alternative"]
+        ]
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Byte streams (InputStream/OutputStream) for binary; Character streams (Reader/Writer) for text",
+          "Always use try-with-resources — never manually close streams",
+          "Files.readString(), Files.lines() — modern, simpler file reading (Java 11+)",
+          "Path is immutable; use resolve() to combine, relativize() to get relative paths",
+          "Files.walk() returns a lazy Stream<Path> — always use in try-with-resources",
+          "WatchService monitors directories for file changes — for hot-reload and file sync",
+          "Serialization is a security risk — prefer JSON/Protobuf in new code",
+          "serialVersionUID prevents InvalidClassException during deserialization version mismatches",
+          "transient fields are excluded from serialization",
+          "ObjectInputFilter (Java 9+) whitelists classes for deserialization security"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the difference between byte streams and character streams?",
+        "answer": "Byte streams (InputStream/OutputStream) handle raw binary data 8 bits at a time — for images, audio, binary files. Character streams (Reader/Writer) handle Unicode characters with charset encoding/decoding — for text files, config files, CSV. Character streams use charset (like UTF-8) to convert between bytes and characters. Rule: use character streams for text, byte streams for everything else."
+      },
+      {
+        "question": "Why is Java serialization considered dangerous?",
+        "answer": "Java deserialization executes code from the serialized byte stream — if an attacker controls the bytes, they can trigger arbitrary code execution via gadget chains (chains of classes already on the classpath). This has led to major CVEs (Apache Commons Collections, Spring). Mitigations: use ObjectInputFilter to whitelist classes, prefer JSON/Protobuf, avoid Serializable in public APIs, and never deserialize untrusted data."
+      },
+      {
+        "question": "What advantages does java.nio.file.Path have over java.io.File?",
+        "answer": "Path is immutable (thread-safe), composable (resolve, relativize, normalize), and works with the more powerful Files utility class. Files methods throw descriptive IOExceptions instead of returning boolean. Files.walk() and Files.find() provide lazy stream-based directory traversal. Path works with the WatchService for file monitoring. File.toPath() bridges legacy code. Overall, Path + Files is the modern, recommended file I/O API since Java 7."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Resource Leak Without try-with-resources",
+        "mistake": "Manually managing stream lifecycle with try-finally and forgetting to handle exceptions in the close() call itself.",
+        "correct": "Always use try-with-resources. It handles all cleanup automatically, even if close() throws. Multiple resources are closed in reverse order of declaration.",
+        "codeExample": "// BAD — leak risk\nFileReader fr = new FileReader(\"file.txt\");\ntry {\n    // use fr\n} finally {\n    fr.close(); // what if THIS throws?\n}\n\n// GOOD — bulletproof\ntry (FileReader fr = new FileReader(\"file.txt\")) {\n    // use fr\n} // auto-closed, suppressed exceptions handled"
+      }
+    ]
+  },
+  {
+    "id": "nio",
+    "title": "NIO: Non-Blocking I/O",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Buffers, Channels, and Selectors",
+        "paragraphs": [
+          "Java NIO (java.nio) provides an alternative I/O model based on three concepts: Buffers (data containers), Channels (data highways), and Selectors (multiplexers). Unlike traditional I/O which is blocking and stream-oriented, NIO is buffer-oriented and supports non-blocking mode.",
+          "A Channel reads/writes data to/from a Buffer. Unlike streams (one-directional), channels can be bidirectional. A Selector allows a single thread to monitor multiple channels for readiness events (connect, read, write) — this is the foundation of high-performance servers like Netty that handle thousands of connections with a few threads."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "NIO File and Buffer Operations",
+        "code": "// Reading a file with NIO\ntry (FileChannel channel = FileChannel.open(Path.of(\"data.txt\"))) {\n    ByteBuffer buffer = ByteBuffer.allocate(1024);\n    while (channel.read(buffer) != -1) {\n        buffer.flip();  // switch from write-mode to read-mode\n        while (buffer.hasRemaining()) {\n            System.out.print((char) buffer.get());\n        }\n        buffer.clear();  // reset for next read\n    }\n}\n\n// Non-blocking server with Selector (simplified)\nServerSocketChannel server = ServerSocketChannel.open();\nserver.configureBlocking(false);\nserver.bind(new InetSocketAddress(8080));\n\nSelector selector = Selector.open();\nserver.register(selector, SelectionKey.OP_ACCEPT);\n\nwhile (true) {\n    selector.select(); // blocks until events arrive\n    for (SelectionKey key : selector.selectedKeys()) {\n        if (key.isAcceptable()) { /* handle new connection */ }\n        if (key.isReadable())   { /* handle read */ }\n    }\n}"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Buffer: container for data with position, limit, capacity — must flip() to switch read/write mode",
+          "Channel: bidirectional I/O — FileChannel, SocketChannel, ServerSocketChannel",
+          "Selector: multiplexes multiple channels on one thread — key for high-performance networking",
+          "NIO is buffer-oriented (blocks of data), traditional I/O is stream-oriented (one byte/char at a time)",
+          "Memory-mapped files (FileChannel.map()) map file regions directly into memory for fast random access",
+          "For modern file I/O, java.nio.file.Files is simpler than Channel API for common operations"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the Selector pattern in NIO and why is it important?",
+        "answer": "A Selector allows a single thread to monitor multiple NIO Channels for readiness events (accept, connect, read, write). Without selectors, you'd need one thread per connection (blocking I/O), which doesn't scale beyond a few thousand. With selectors, one thread can efficiently manage thousands of connections — it waits at select() and is only woken when a channel has events to handle. This is the reactor pattern, used by Netty, Node.js event loop, and most high-performance network servers."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Buffer flip() Confusion",
+        "mistake": "Forgetting to call flip() on a ByteBuffer after writing to it before reading — reads from the wrong position.",
+        "correct": "After writing to a buffer (channel.read(buffer) or buffer.put()), call buffer.flip() to reset position to 0 and set limit to the amount written. This switches the buffer from write-mode to read-mode. After reading, call clear() (read everything) or compact() (read some, keep remainder)."
+      }
+    ]
+  },
+  {
+    "id": "reflection-api",
+    "title": "Reflection API",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Runtime Class Inspection",
+        "paragraphs": [
+          "The Reflection API (java.lang.reflect) allows runtime inspection and modification of classes, methods, fields, and constructors. You can discover a class's structure, invoke methods, access private fields, and create instances dynamically — all at runtime without knowing types at compile time.",
+          "While powerful, reflection has significant costs: no compile-time type safety, poor performance (reflective calls are slower than direct calls), breaks encapsulation (accessing private members), and complicates maintenance. Frameworks like Spring, Hibernate, and Jackson use reflection internally — but application code should minimize direct reflection use."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Reflection API Examples",
+        "code": "// Get class metadata\nClass<?> clazz = MyClass.class;\n// or: Class.forName(\"com.example.MyClass\")\n// or: obj.getClass()\n\n// Inspect methods\nMethod[] methods = clazz.getDeclaredMethods();\nfor (Method m : methods) {\n    System.out.println(m.getName() + \" -> \" + m.getReturnType());\n}\n\n// Access private field\nField field = clazz.getDeclaredField(\"secretValue\");\nfield.setAccessible(true); // bypass private!\nObject value = field.get(instance);\n\n// Invoke method dynamically\nMethod method = clazz.getDeclaredMethod(\"calculate\", int.class);\nmethod.setAccessible(true);\nObject result = method.invoke(instance, 42);\n\n// Create instance\nConstructor<?> ctor = clazz.getDeclaredConstructor(String.class);\nObject newObj = ctor.newInstance(\"test\");"
+      },
+      {
+        "type": "explanation",
+        "heading": "Annotations & Custom Annotation Processing",
+        "paragraphs": [
+          "Annotations are metadata markers that can be processed at compile-time (annotation processors) or runtime (reflection). @Retention determines when the annotation is available: SOURCE (compile-time only, like @Override), CLASS (in bytecode but not runtime), RUNTIME (available via reflection). @Target restricts where annotations can be placed (TYPE, METHOD, FIELD, PARAMETER, etc.).",
+          "Frameworks use runtime annotations extensively: Spring's @Autowired, @Transactional; JPA's @Entity, @Column; Jackson's @JsonProperty. At startup, they scan classpath for annotated classes using reflection, build metadata caches, and create dynamic proxies or subclasses to implement behavior."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Custom Annotation & Processing",
+        "code": "// Define a custom annotation\n@Retention(RetentionPolicy.RUNTIME)\n@Target(ElementType.METHOD)\npublic @interface Timed {\n    String label() default \"\";\n}\n\n// Use it\npublic class OrderService {\n    @Timed(label = \"order-processing\")\n    public void processOrder(Order order) { ... }\n}\n\n// Process at runtime via reflection\nfor (Method method : clazz.getDeclaredMethods()) {\n    if (method.isAnnotationPresent(Timed.class)) {\n        Timed timed = method.getAnnotation(Timed.class);\n        System.out.println(\"Timed method: \" + method.getName()\n            + \" label=\" + timed.label());\n    }\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Dynamic Proxy — Runtime Interface Implementation",
+        "paragraphs": [
+          "java.lang.reflect.Proxy creates runtime implementations of interfaces using an InvocationHandler. When a method is called on the proxy, it's intercepted by the handler's invoke() method. This is the foundation of AOP (Aspect-Oriented Programming) in Spring, transaction management in JPA, and RPC clients.",
+          "Proxy only works with interfaces (JDK proxy). For class proxies, libraries like CGLIB or Byte Buddy create subclasses at runtime. Spring uses JDK proxy for interface-based beans and CGLIB for class-based beans by default."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Dynamic Proxy Pattern",
+        "code": "// Interface\ninterface UserService {\n    User findById(int id);\n}\n\n// InvocationHandler — intercepts all calls\nInvocationHandler handler = (proxy, method, args) -> {\n    long start = System.nanoTime();\n    Object result = realService.findById((int) args[0]);\n    long elapsed = System.nanoTime() - start;\n    System.out.println(method.getName() + \" took \" + elapsed + \"ns\");\n    return result;\n};\n\n// Create proxy instance\nUserService proxy = (UserService) Proxy.newProxyInstance(\n    UserService.class.getClassLoader(),\n    new Class<?>[] { UserService.class },\n    handler\n);\n\n// Calls go through the handler\nUser user = proxy.findById(1); // intercepted + timed!"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Three ways to get a Class object: MyClass.class, obj.getClass(), Class.forName(\"...\")",
+          "getDeclaredXxx() includes private members; getXxx() includes inherited but only public",
+          "setAccessible(true) bypasses access control — use sparingly and security-consciously",
+          "Reflection is 10-100x slower than direct calls — JIT can't optimize reflective invocations",
+          "Java 9+ module system restricts reflective access — use --add-opens for legacy code",
+          "Prefer interfaces, strategy pattern, or service loaders over reflection when possible",
+          "@Retention(RUNTIME) annotations are accessible via reflection; SOURCE annotations are not",
+          "Dynamic Proxy creates runtime interface implementations via InvocationHandler",
+          "JDK Proxy works only with interfaces; CGLIB creates class subclasses"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What are the performance implications of using Reflection?",
+        "answer": "Reflection is significantly slower than direct calls. (1) No JIT optimization — JIT can't inline or optimize reflective calls. (2) Security checks on every call — setAccessible(true) still incurs overhead. (3) Boxing/unboxing — reflective invoke() uses Object parameters. (4) No compile-time verification — errors surface at runtime. Benchmarks show 10-100x slowdown for method invocation. Mitigations: cache Method/Field objects, use MethodHandles (Java 7+) for better performance, or use code generation (annotation processors) to eliminate reflection entirely."
+      },
+      {
+        "question": "How does Spring use Reflection internally?",
+        "answer": "Spring uses reflection for: (1) Component scanning — scanning classpath for @Component, @Service, @Repository annotated classes. (2) Dependency injection — inspecting constructors, fields, and methods for @Autowired. (3) AOP proxies — creating JDK Dynamic Proxy (for interfaces) or CGLIB proxy (for classes) to implement @Transactional, @Cacheable. (4) Bean instantiation — invoking constructors reflectively based on metadata. (5) Property binding — using reflection to map configuration to POJO fields."
+      },
+      {
+        "question": "Explain the difference between getDeclaredMethods() and getMethods().",
+        "answer": "getDeclaredMethods() returns all methods declared in THIS class only — including private, protected, and package-private — but NOT inherited methods. getMethods() returns all PUBLIC methods — including inherited ones from superclasses and interfaces — but NOT private/protected. Same pattern: getDeclaredFields() vs getFields(), getDeclaredConstructors() vs getConstructors(). For accessing private members, you must use getDeclaredXxx() + setAccessible(true)."
+      },
+      {
+        "question": "What is a Dynamic Proxy and where is it used?",
+        "answer": "A Dynamic Proxy is a runtime-generated class that implements one or more interfaces, delegating all method calls to an InvocationHandler. Created via Proxy.newProxyInstance(). Used in: (1) Spring AOP — transaction, caching, security proxies. (2) RPC frameworks — Feign, gRPC stubs. (3) Logging/monitoring — intercepting method calls transparently. (4) Lazy initialization — proxy that loads the real object on first use. Limitation: JDK Proxy only works with interfaces. For class proxying, CGLIB or Byte Buddy create subclasses."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Reflection Breaks Module System",
+        "mistake": "Using setAccessible(true) in modular Java (9+) — throws InaccessibleObjectException for module-encapsulated types.",
+        "correct": "In Java 9+, the module system restricts deep reflection. Either: (1) use --add-opens on the command line, (2) declare opens in module-info.java, or (3) redesign to avoid reflective access. This is a deliberate security improvement.",
+        "codeExample": "// Java 9+ throws:\nfield.setAccessible(true);\n// InaccessibleObjectException: module java.base\n// does not \"opens java.lang\" to unnamed module\n\n// Fix: JVM argument\n// --add-opens java.base/java.lang=ALL-UNNAMED"
+      },
+      {
+        "title": "getDeclaredMethods vs getMethods Confusion",
+        "mistake": "Using getMethods() to find private methods — it only returns public methods (including inherited). Or using getDeclaredMethods() expecting inherited public methods.",
+        "correct": "getDeclaredMethods() = this class only, all access levels. getMethods() = public only, including inherited. Neither alone gives you 'all methods including inherited private' — you must walk the superclass chain with getDeclaredMethods() recursively.",
+        "codeExample": "// Want private method? Use getDeclared!\nMethod m = clazz.getDeclaredMethod(\"secret\");\nm.setAccessible(true);\n\n// Want inherited public method? Use get!\nMethod m = clazz.getMethod(\"toString\");"
+      }
+    ]
+  },
+  {
+    "id": "method-handles",
+    "title": "Method Handles",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Faster Alternative to Reflection",
+        "paragraphs": [
+          "Method Handles (java.lang.invoke.MethodHandle, Java 7+) provide a more performant alternative to reflection for dynamic method invocation. Unlike reflection, method handles are JIT-optimizable — the JVM can inline method handle calls just like regular method calls after warmup.",
+          "MethodHandles.Lookup provides access control at creation time (not invocation time like reflection). Once you have a MethodHandle, all access checks are done — subsequent invocations are fast. The invokedynamic instruction (used by lambdas and string concatenation) is built on method handles."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "MethodHandle vs Reflection",
+        "code": "// Reflection — access check on every call\nMethod method = MyClass.class.getDeclaredMethod(\"compute\", int.class);\nmethod.setAccessible(true);\nObject result = method.invoke(instance, 42); // slow per call\n\n// MethodHandle — access check once, fast invocation\nMethodHandles.Lookup lookup = MethodHandles.lookup();\nMethodHandle mh = lookup.findVirtual(\n    MyClass.class, \"compute\",\n    MethodType.methodType(int.class, int.class));\nint result = (int) mh.invoke(instance, 42); // JIT-optimizable!\n\n// VarHandle — modern alternative to Field reflection (Java 9+)\nVarHandle vh = MethodHandles.lookup().findVarHandle(\n    MyClass.class, \"count\", int.class);\nvh.set(instance, 42);                // set field\nint val = (int) vh.get(instance);    // get field\nvh.compareAndSet(instance, 42, 43); // atomic CAS!"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "MethodHandle: JIT-optimizable dynamic method invocation (faster than reflection after warmup)",
+          "Access checks happen at lookup time, not invocation time — inverse of reflection",
+          "VarHandle (Java 9+): type-safe alternative to Field reflection with atomic operations",
+          "invokedynamic instruction (lambdas, string concat) is built on method handles",
+          "MethodType describes method signature: returnType + parameterTypes",
+          "Use reflection for introspection (discovering methods); use MethodHandles for invocation performance"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "How are MethodHandles different from Reflection?",
+        "answer": "Key differences: (1) Performance — MethodHandles are JIT-optimizable; reflection is not. (2) Access checks — MethodHandles check at creation (Lookup); reflection checks at every invocation. (3) Type safety — MethodHandle.invoke() returns typed results; reflection uses Object. (4) Flexibility — MethodHandles can be combined, adapted, and bound (partial application). (5) Foundation — invokedynamic (used by lambdas) is built on MethodHandles, not reflection. Use reflection for class discovery; MethodHandles for repeated dynamic invocation."
+      }
+    ],
+    "trickyPoints": []
+  },
+  {
+    "id": "http-client",
+    "title": "HTTP Client (Java 11+)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Modern HTTP/2 Client",
+        "paragraphs": [
+          "Java 11 introduced a modern HTTP Client (java.net.http) that replaces the legacy HttpURLConnection. It supports HTTP/2 natively, async requests via CompletableFuture, WebSocket support, and a fluent builder API. It handles connection pooling, redirects, and header management automatically.",
+          "The API has three main classes: HttpClient (reusable, handles connection settings), HttpRequest (immutable, represents a request), and HttpResponse (contains status, headers, and body). For async operations, use sendAsync() which returns CompletableFuture<HttpResponse<T>>."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Java HTTP Client API",
+        "code": "// Create a reusable HttpClient\nHttpClient client = HttpClient.newBuilder()\n    .version(HttpClient.Version.HTTP_2)\n    .connectTimeout(Duration.ofSeconds(10))\n    .followRedirects(HttpClient.Redirect.NORMAL)\n    .build();\n\n// Synchronous GET\nHttpRequest request = HttpRequest.newBuilder()\n    .uri(URI.create(\"https://api.example.com/users\"))\n    .header(\"Accept\", \"application/json\")\n    .GET()\n    .build();\n\nHttpResponse<String> response = client.send(\n    request, HttpResponse.BodyHandlers.ofString());\nSystem.out.println(response.statusCode()); // 200\nSystem.out.println(response.body());       // JSON string\n\n// Asynchronous GET\nCompletableFuture<HttpResponse<String>> asyncResponse = \n    client.sendAsync(request, HttpResponse.BodyHandlers.ofString());\nasyncResponse\n    .thenApply(HttpResponse::body)\n    .thenAccept(System.out::println);\n\n// POST with JSON body\nHttpRequest postReq = HttpRequest.newBuilder()\n    .uri(URI.create(\"https://api.example.com/users\"))\n    .header(\"Content-Type\", \"application/json\")\n    .POST(HttpRequest.BodyPublishers.ofString(\n        \"{\\\"name\\\": \\\"Alice\\\", \\\"email\\\": \\\"alice@example.com\\\"}\"))\n    .build();"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "HttpClient is immutable and reusable — create once, share across threads",
+          "Supports HTTP/2 natively with automatic fallback to HTTP/1.1",
+          "sendAsync() returns CompletableFuture for non-blocking operations",
+          "BodyHandlers: ofString(), ofByteArray(), ofFile(), ofInputStream(), ofLines()",
+          "BodyPublishers: ofString(), ofByteArray(), ofFile() for POSTing data",
+          "Connection pooling is handled automatically internally",
+          "Replaces HttpURLConnection — use this for all new HTTP code"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "Why was HttpClient introduced in Java 11?",
+        "answer": "HttpURLConnection (Java 1.1) had many issues: blocking-only API, poor HTTP/2 support, non-trivial error handling, and a confusing API design. The new HttpClient provides: (1) HTTP/2 support with automatic protocol negotiation, (2) Async API via CompletableFuture, (3) Builder pattern for clean configuration, (4) WebSocket support, (5) Immutable/thread-safe design, (6) Automatic connection pooling. It's a modern, production-ready HTTP client that eliminates the need for third-party libraries like Apache HttpClient for most use cases."
+      }
+    ],
+    "trickyPoints": []
+  }
+]

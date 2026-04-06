@@ -1,0 +1,447 @@
+[
+  {
+    "id": "list-internals",
+    "title": "List: ArrayList vs LinkedList",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "ArrayList: Dynamic Array Under the Hood",
+        "paragraphs": [
+          "ArrayList is backed by a resizable Object[] array. Default initial capacity is 10. When the array is full, it grows by 50% (newCapacity = oldCapacity + oldCapacity >> 1). This involves creating a new array and copying all elements — an O(n) operation. However, amortized insertion at the end is O(1).",
+          "Random access by index is O(1) — that's its killer feature. Insertion/deletion at arbitrary positions is O(n) because elements must be shifted. For most use cases, ArrayList outperforms LinkedList due to CPU cache locality — contiguous memory layout means array elements are fetched together into CPU cache lines."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "LinkedList: Doubly-Linked Nodes",
+        "paragraphs": [
+          "LinkedList uses doubly-linked nodes — each node holds a reference to the previous and next node. Insertion/deletion at head or tail is O(1) if you have a reference to the node. Random access by index is O(n) because you must traverse from head or tail.",
+          "Despite the O(1) insert/delete advantage, LinkedList is almost always slower than ArrayList in practice. Each node is a separate heap object (poor cache locality), each node has 24+ bytes overhead (prev, next, item references), and traversal is slower due to pointer chasing across scattered memory locations."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "ArrayList vs LinkedList Performance",
+        "headers": ["Operation", "ArrayList", "LinkedList", "Winner"],
+        "rows": [
+          ["get(index)", "O(1)", "O(n)", "ArrayList"],
+          ["add(end)", "O(1) amortized", "O(1)", "Tie"],
+          ["add(index)", "O(n)", "O(n)*", "ArrayList (cache)"],
+          ["remove(index)", "O(n)", "O(n)*", "ArrayList (cache)"],
+          ["Iterator.remove()", "O(n)", "O(1)", "LinkedList"],
+          ["Memory overhead", "~4 bytes/element", "~24 bytes/element", "ArrayList"],
+          ["Cache locality", "Excellent", "Poor", "ArrayList"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "CopyOnWriteArrayList: Read-Heavy Thread Safety",
+        "paragraphs": [
+          "CopyOnWriteArrayList (COWAL) is a thread-safe variant of ArrayList where every mutative operation (add, set, remove) creates a fresh copy of the underlying array. Reads never block and always see a consistent snapshot. This makes it ideal for read-heavy scenarios with infrequent writes — like listener/observer lists, configuration caches, and routing tables.",
+          "The trade-off is clear: writes are O(n) because the entire array is copied. Iterator snapshots the array at creation time — no ConcurrentModificationException even if the list is modified. However, iterator doesn't see updates made after its creation. Don't use COWAL for write-heavy workloads."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Immutable List Factories (Java 9+)",
+        "paragraphs": [
+          "List.of() and List.copyOf() create unmodifiable lists that are more memory-efficient than wrapping with Collections.unmodifiableList(). They don't allow null elements, and any mutative operation throws UnsupportedOperationException.",
+          "Under the hood, small lists (0-2 elements) use specialized classes (List12) that store elements directly in fields — no array allocation. For 3+ elements, a compact array is used with no unused slots. These are structurally immutable — the reference array can't be changed, and the list stores elements by value rather than by wrapping an existing mutable list."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "ConcurrentModificationException",
+        "paragraphs": [
+          "ArrayList's iterator is fail-fast — if the list is structurally modified while iterating (except through the iterator itself), it throws ConcurrentModificationException. This detection uses a modCount field that's incremented on every structural change.",
+          "The fix: use Iterator.remove() or ListIterator.add() for modifications during iteration. Or use a CopyOnWriteArrayList (iterator sees a snapshot). Or collect indices/elements to modify and apply changes after iteration. Never modify a collection inside a for-each loop — it always throws."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Safe Modification During Iteration",
+        "code": "// BAD — ConcurrentModificationException\nfor (String s : list) {\n    if (s.startsWith(\"x\")) {\n        list.remove(s);  // throws!\n    }\n}\n\n// GOOD — Iterator.remove()\nIterator<String> it = list.iterator();\nwhile (it.hasNext()) {\n    if (it.next().startsWith(\"x\")) {\n        it.remove();  // safe\n    }\n}\n\n// GOOD — removeIf (Java 8+)\nlist.removeIf(s -> s.startsWith(\"x\"));\n\n// GOOD — Stream filter + collect (new list)\nList<String> filtered = list.stream()\n    .filter(s -> !s.startsWith(\"x\"))\n    .toList();"
+      },
+      {
+        "type": "explanation",
+        "heading": "Comparable vs Comparator — Natural vs Custom Ordering",
+        "paragraphs": [
+          "Comparable<T> is implemented by the class itself (natural ordering) — it defines ONE default sort order via compareTo(T other). String, Integer, LocalDate all implement Comparable. Comparator<T> is external to the class — it defines custom, pluggable sort orders. You can have multiple Comparators for the same class.",
+          "Use Comparable when there's a single obvious natural order (e.g., numbers by value, dates chronologically). Use Comparator when you need multiple sort orders (by name, by age, by salary) or when you can't modify the class. Since Java 8, Comparator has powerful factory methods: Comparator.comparing(), thenComparing(), reversed(), nullsFirst(), nullsLast()."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Comparable vs Comparator",
+        "code": "// Comparable — natural ordering (class implements it)\npublic class Employee implements Comparable<Employee> {\n    private String name;\n    private int age;\n\n    @Override\n    public int compareTo(Employee other) {\n        return Integer.compare(this.age, other.age); // natural order: by age\n    }\n}\nCollections.sort(employees); // uses compareTo()\n\n// Comparator — external, pluggable ordering\nComparator<Employee> byName = Comparator.comparing(Employee::getName);\nComparator<Employee> bySalaryDesc = Comparator.comparingDouble(Employee::getSalary).reversed();\nComparator<Employee> byDeptThenName = Comparator.comparing(Employee::getDept)\n    .thenComparing(Employee::getName); // chain comparators\n\n// Null-safe comparators\nComparator<Employee> nullSafe = Comparator.comparing(\n    Employee::getName, Comparator.nullsLast(Comparator.naturalOrder()));\n\nemployees.sort(byName);        // sort by name\nemployees.sort(bySalaryDesc);  // sort by salary descending"
+      },
+      {
+        "type": "explanation",
+        "heading": "Collections Utility Class — Essential Methods",
+        "paragraphs": [
+          "java.util.Collections provides static utility methods for collection operations. sort() sorts a list (uses TimSort — O(n log n), stable). binarySearch() finds elements in a sorted list (O(log n) — list MUST be sorted first). unmodifiableList/Set/Map() wrap collections to prevent modification.",
+          "synchronizedList/Set/Map() wrap collections for thread safety (but iteration still needs external synchronization). frequency() counts occurrences of an element. disjoint() checks if two collections have no elements in common. singletonList/Set/Map() create immutable single-element collections. emptyList/Set/Map() return efficient empty immutable collections."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Collections Utility Methods",
+        "code": "List<Integer> list = new ArrayList<>(List.of(3, 1, 4, 1, 5, 9));\n\n// Sorting and searching\nCollections.sort(list);                    // [1, 1, 3, 4, 5, 9]\nint idx = Collections.binarySearch(list, 4); // 3 (must be sorted!)\n\n// Min, max, frequency\nCollections.min(list);            // 1\nCollections.max(list);            // 9\nCollections.frequency(list, 1);   // 2 (appears twice)\n\n// Unmodifiable wrappers (shallow — inner elements still mutable)\nList<Integer> immutable = Collections.unmodifiableList(list);\nimmutable.add(7); // UnsupportedOperationException!\n\n// Synchronized wrappers (thread-safe)\nList<Integer> syncList = Collections.synchronizedList(new ArrayList<>());\n// WARNING: iteration still needs manual synchronization!\nsynchronized (syncList) {\n    for (int i : syncList) { /* safe iteration */ }\n}\n\n// Utility checks\nboolean noCommon = Collections.disjoint(list1, list2); // true if no shared elements\nCollections.swap(list, 0, 1);     // swap elements at indices\nCollections.rotate(list, 2);      // rotate elements right by 2\nCollections.shuffle(list);        // random permutation"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "ArrayList default capacity: 10, growth factor: 1.5x (50%)",
+          "ArrayList is almost always faster due to CPU cache locality",
+          "LinkedList only wins for frequent insert/remove at iterator position",
+          "Use ArrayList for 99% of List use cases",
+          "Pre-size ArrayList when you know the expected size: new ArrayList<>(1000)",
+          "Comparable: natural order, one per class. Comparator: custom order, many per class",
+          "Comparator.comparing().thenComparing().reversed() — fluent chaining (Java 8+)",
+          "Collections.sort() uses TimSort (stable, O(n log n), adaptive)",
+          "Collections.binarySearch() requires a pre-sorted list — undefined behavior otherwise",
+          "Collections.unmodifiableList() returns a view — changes to original list are visible!",
+          "List.of() (Java 9) is truly immutable and more efficient than Collections.unmodifiableList()",
+          "CopyOnWriteArrayList: thread-safe, reads never block, but writes copy entire array",
+          "Never modify a collection inside a for-each loop — use Iterator.remove() or removeIf()"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "When would you choose LinkedList over ArrayList?",
+        "answer": "Almost never in modern Java. The only legitimate case is when you're doing frequent insertions/removals while iterating (using Iterator.remove() or ListIterator.add()), where LinkedList is O(1) vs ArrayList's O(n). But even then, if you're doing many iterations to find the position, LinkedList loses due to poor cache locality. In practice, ArrayList wins in nearly all scenarios due to cache-friendly contiguous memory layout."
+      },
+      {
+        "question": "How does ArrayList grow internally?",
+        "answer": "ArrayList starts with a default capacity of 10. When the internal array is full (size == capacity), it creates a new array with capacity = oldCapacity + (oldCapacity >> 1) — approximately 1.5x growth. It then copies all elements using System.arraycopy() (native, fast). This growth operation is O(n), but since it happens infrequently, the amortized cost of add() is O(1). You can avoid growths entirely by specifying initial capacity: new ArrayList<>(expectedSize)."
+      },
+      {
+        "question": "What is CopyOnWriteArrayList and when would you use it?",
+        "answer": "CopyOnWriteArrayList creates a fresh copy of the internal array on every write operation (add, set, remove), making reads lock-free and always consistent. Use it when: (1) reads vastly outnumber writes (like observer/listener lists), (2) you need consistent iteration without ConcurrentModificationException, (3) the list is small. Avoid when writes are frequent (each write copies the entire array — O(n)) or the list is large. Its iterator sees a snapshot — modifications after iterator creation are invisible."
+      },
+      {
+        "question": "How to safely modify a List while iterating over it?",
+        "answer": "Four approaches: (1) Use Iterator.remove() or ListIterator.add/set — the only safe way with standard iterators. (2) Use removeIf(predicate) (Java 8+) — internally uses iterator. (3) Stream filter + collect to create a new filtered list. (4) Collect indices/items to modify, then apply changes after iteration. Never use list.remove() inside a for-each loop — it always throws ConcurrentModificationException because for-each uses an internal iterator that detects structural modification."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "ArrayList Capacity vs Size",
+        "mistake": "Confusing capacity (internal array length) with size (number of elements). new ArrayList<>(100) creates an empty list with capacity 100, not a list of 100 elements.",
+        "correct": "Capacity is the internal array length — it determines when growth triggers. Size is the actual number of elements. size() returns 0 for a newly created ArrayList regardless of capacity.",
+        "codeExample": "ArrayList<Integer> list = new ArrayList<>(100);\nlist.size();     // 0 — no elements!\nlist.get(0);     // IndexOutOfBoundsException!\n// Capacity is 100 but size is 0"
+      },
+      {
+        "title": "Modifying List Inside for-each Loop",
+        "mistake": "Calling list.remove() or list.add() inside a for-each loop, which throws ConcurrentModificationException.",
+        "correct": "Use Iterator.remove(), removeIf(), or create a new filtered list with streams. for-each uses an iterator internally that detects structural changes via a modCount check.",
+        "codeExample": "// THROWS ConcurrentModificationException\nfor (String s : list) {\n    if (s.isEmpty()) list.remove(s);\n}\n\n// CORRECT\nlist.removeIf(String::isEmpty);"
+      },
+      {
+        "title": "List.of() is Truly Immutable",
+        "mistake": "Trying to add/remove elements from a List.of() or List.copyOf() result.",
+        "correct": "List.of() creates a structurally immutable list — any mutative operation throws UnsupportedOperationException. It also rejects null elements. If you need mutability, wrap it: new ArrayList<>(List.of(...)).",
+        "codeExample": "List<String> list = List.of(\"a\", \"b\");\nlist.add(\"c\");  // UnsupportedOperationException!\nlist.set(0, \"x\"); // UnsupportedOperationException!\n\nList.of(\"a\", null); // NullPointerException!"
+      }
+    ]
+  },
+  {
+    "id": "map-internals",
+    "title": "Map Internals: HashMap & ConcurrentHashMap",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "HashMap: How Hashing Works",
+        "paragraphs": [
+          "HashMap stores key-value pairs in an array of buckets (Node<K,V>[] table). Default capacity is 16 with a load factor of 0.75. When the number of entries exceeds capacity × loadFactor (12 for default), the table doubles in size (rehashing).",
+          "For a given key: (1) Compute hash using key.hashCode(), (2) Spread the hash (hash ^ hash >>> 16) to reduce collisions, (3) Find bucket index using (n-1) & hash (bitwise AND, faster than modulo), (4) If bucket is empty, insert directly. If occupied, handle collision."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Collision Handling: LinkedList → Red-Black Tree",
+        "paragraphs": [
+          "Before Java 8, colliding entries formed a linked list in the bucket — worst case O(n) lookup. Java 8 introduced treeification: when a bucket has 8+ entries, the linked list converts to a red-black tree — O(log n) worst case. When the tree shrinks below 6 entries, it converts back to a linked list.",
+          "The treeification threshold of 8 was chosen based on Poisson distribution probability — with a good hash function and load factor 0.75, the probability of 8+ collisions in one bucket is less than 1 in 10 million. This means treeification is a safety net, not a normal operation."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "HashMap Internal Flow",
+        "code": "// What happens when you call map.put(key, value):\n\n// Step 1: Compute hash\nint hash = key.hashCode();\nhash = hash ^ (hash >>> 16);  // spread high bits\n\n// Step 2: Find bucket\nint index = (table.length - 1) & hash;  // fast modulo\n\n// Step 3: Insert or handle collision\n// If table[index] is null → create new Node\n// If table[index] exists:\n//   - Compare hash AND key.equals() for each node\n//   - If match found → replace value\n//   - If no match → append to list/tree\n\n// Step 4: Check load factor\n// If size > capacity * 0.75 → resize (double capacity, rehash all)"
+      },
+      {
+        "type": "explanation",
+        "heading": "ConcurrentHashMap: Thread-Safe Without Full Locking",
+        "paragraphs": [
+          "ConcurrentHashMap (CHM) provides thread safety without locking the entire map. In Java 8+, it uses CAS (Compare-And-Swap) for the first node in each bucket and synchronized on the first node for subsequent insertions in the same bucket. This is far more granular than the old segment-based locking.",
+          "Key differences from Hashtable: CHM doesn't lock the entire map, allows concurrent reads without locking, doesn't permit null keys or values (to avoid ambiguity between 'key not found' and 'key maps to null'), and provides atomic operations like putIfAbsent(), compute(), and merge()."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "HashMap vs ConcurrentHashMap vs Hashtable",
+        "headers": ["Feature", "HashMap", "ConcurrentHashMap", "Hashtable"],
+        "rows": [
+          ["Thread-safe", "❌ No", "✅ Yes (CAS + node lock)", "✅ Yes (full sync)"],
+          ["Null keys", "✅ 1 null key allowed", "❌ No", "❌ No"],
+          ["Null values", "✅ Allowed", "❌ No", "❌ No"],
+          ["Performance (concurrent)", "N/A (not safe)", "High (fine-grained locking)", "Low (full lock)"],
+          ["Iterator", "Fail-fast", "Weakly consistent", "Fail-fast"],
+          ["Legacy", "No", "No", "Yes (Java 1.0)"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "LinkedHashMap — Insertion Order & LRU Cache",
+        "paragraphs": [
+          "LinkedHashMap maintains insertion order by threading a doubly-linked list through all entries. Unlike HashMap (unordered) or TreeMap (sorted), iteration follows the order entries were added. Optionally, you can use access-order mode (constructor flag: accessOrder=true) where the most recently accessed entry moves to the end.",
+          "This access-order mode enables a simple LRU (Least Recently Used) cache implementation. Override removeEldestEntry(Map.Entry) to return true when the map exceeds a capacity limit — the oldest (least recently accessed) entry is automatically removed on each put()."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "LinkedHashMap LRU Cache & TreeMap",
+        "code": "// Simple LRU Cache using LinkedHashMap\npublic class LRUCache<K, V> extends LinkedHashMap<K, V> {\n    private final int maxSize;\n\n    public LRUCache(int maxSize) {\n        super(maxSize, 0.75f, true); // true = access-order\n        this.maxSize = maxSize;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        return size() > maxSize; // auto-evict when over capacity\n    }\n}\n\nLRUCache<String, String> cache = new LRUCache<>(3);\ncache.put(\"a\", \"1\"); cache.put(\"b\", \"2\"); cache.put(\"c\", \"3\");\ncache.get(\"a\");      // access \"a\" — moves to end\ncache.put(\"d\", \"4\"); // evicts \"b\" (least recently accessed)\n\n// TreeMap — sorted by keys (Red-Black Tree, O(log n))\nTreeMap<String, Integer> sorted = new TreeMap<>();\nsorted.put(\"banana\", 2); sorted.put(\"apple\", 1); sorted.put(\"cherry\", 3);\nsorted.firstKey();        // \"apple\" (smallest)\nsorted.lastKey();         // \"cherry\" (largest)\nsorted.floorKey(\"cat\");   // \"cherry\" won't work, \"banana\" (<=)\nsorted.ceilingKey(\"b\");   // \"banana\" (>=)\nsorted.subMap(\"apple\", \"cherry\"); // {apple=1, banana=2}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Modern Map Operations — compute, merge, computeIfAbsent",
+        "paragraphs": [
+          "Java 8 added powerful atomic Map operations that replace verbose get-check-put patterns. computeIfAbsent(key, mappingFunction) creates a value only if the key is absent — perfect for cache-on-first-access patterns and building Map<K, List<V>> structures.",
+          "compute(key, remappingFunction) creates or updates a value based on both key and current value. merge(key, value, remappingFunction) combines a new value with an existing value — ideal for counting, concatenation, and aggregation. All three are atomic for ConcurrentHashMap."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "compute(), merge(), computeIfAbsent()",
+        "code": "// computeIfAbsent — create value if key is missing\nMap<String, List<String>> groupedByDept = new HashMap<>();\nfor (Employee e : employees) {\n    // OLD way: if (!map.containsKey(dept)) map.put(dept, new ArrayList<>());\n    groupedByDept.computeIfAbsent(e.getDept(), k -> new ArrayList<>())\n                 .add(e.getName()); // creates list only on first access\n}\n\n// merge — combine values (great for counting)\nMap<String, Integer> wordCount = new HashMap<>();\nfor (String word : words) {\n    wordCount.merge(word, 1, Integer::sum); // first=1, subsequent=add 1\n}\n\n// compute — update based on key + current value\nmap.compute(\"key\", (k, v) -> v == null ? 1 : v + 1);\n\n// getOrDefault — avoid null checks\nint count = map.getOrDefault(\"missing\", 0); // returns 0 instead of null\n\n// putIfAbsent — only if key doesn't exist\nmap.putIfAbsent(\"key\", expensiveCompute()); // NOTE: value is always computed!\nmap.computeIfAbsent(\"key\", k -> expensiveCompute()); // value computed ONLY if needed"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "HashMap: default capacity 16, load factor 0.75, doubles on resize",
+          "Hash collision: LinkedList → Red-Black Tree at 8 entries, back to list at 6",
+          "Always override both hashCode() and equals() when using custom keys",
+          "ConcurrentHashMap uses CAS + per-node synchronized — NOT segment locking (Java 8+)",
+          "ConcurrentHashMap does NOT allow null keys or values",
+          "LinkedHashMap maintains insertion order; with accessOrder=true, enables LRU cache",
+          "TreeMap: Red-Black Tree, O(log n), sorted keys, NavigableMap API (floor, ceiling, subMap)",
+          "computeIfAbsent() is lazy (computes value only if key absent); putIfAbsent() is eager",
+          "merge() is perfect for counting, aggregation — atomic for ConcurrentHashMap",
+          "HashMap is NOT ordered — use LinkedHashMap for insertion order, TreeMap for sorted order"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "How does HashMap handle collisions?",
+        "answer": "HashMap uses chaining for collision resolution. When two keys map to the same bucket index, the entries form a linked list in that bucket. Since Java 8, when a bucket reaches 8+ entries, the list converts to a balanced red-black tree (O(log n) lookup instead of O(n)). When the tree shrinks to 6 or fewer entries, it reverts to a linked list. Bucket index is computed as (capacity - 1) & hash, and hashCode() is further spread using hash ^ (hash >>> 16) to distribute entries more evenly."
+      },
+      {
+        "question": "Why can't ConcurrentHashMap have null keys or values?",
+        "answer": "In ConcurrentHashMap, null creates ambiguity in concurrent operations. When map.get(key) returns null, you can't distinguish between 'key not found' and 'key maps to null'. In a single-threaded HashMap, you can follow up with containsKey(), but in a concurrent context, the state could change between the two calls (TOCTOU race condition). Disallowing null eliminates this entire class of bugs."
+      },
+      {
+        "question": "How do you implement an LRU cache in Java?",
+        "answer": "The simplest approach: extend LinkedHashMap with accessOrder=true (constructor parameter). Override removeEldestEntry(Map.Entry) to return true when size() exceeds your capacity limit. This gives O(1) get/put with automatic eviction of least recently accessed entries. For thread safety, wrap with Collections.synchronizedMap() or use a ConcurrentHashMap-based custom implementation. For production, consider Caffeine or Guava Cache which add TTL, statistics, and async loading."
+      },
+      {
+        "question": "What is the difference between computeIfAbsent and putIfAbsent?",
+        "answer": "Both add a value only if the key is absent, but putIfAbsent(key, value) always evaluates the value expression — even if the key exists (the value is just discarded). computeIfAbsent(key, mappingFunction) only invokes the function if the key is absent — truly lazy. For expensive computations, always use computeIfAbsent. Also, computeIfAbsent returns the existing or newly computed value, making it perfect for cache-on-first-access: map.computeIfAbsent(key, k -> new ArrayList<>()).add(item)."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Mutable Keys in HashMap",
+        "mistake": "Using a mutable object as a HashMap key and modifying it after insertion — the entry becomes unfindable.",
+        "correct": "HashMap keys should be immutable. If the hashCode changes after insertion, the key maps to a different bucket, and the original entry is effectively lost (memory leak). Use immutable types (String, Integer, records) as keys.",
+        "codeExample": "List<String> key = new ArrayList<>();\nkey.add(\"hello\");\nmap.put(key, \"value\");\n\nkey.add(\"world\"); // hashCode changed!\nmap.get(key);     // null — bucket mismatch!\n// The original entry is still in the map but unreachable"
+      }
+    ]
+  },
+  {
+    "id": "set-internals",
+    "title": "Set: HashSet Internals",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "HashSet = HashMap with Dummy Values",
+        "paragraphs": [
+          "HashSet internally uses a HashMap<E, Object> where each element is stored as a key, and the value is a constant dummy object (private static final Object PRESENT = new Object()). This means all HashMap internals (hashing, buckets, collisions, treeification) apply directly to HashSet.",
+          "add(e) calls map.put(e, PRESENT) — returns true if the key didn't exist. contains(e) calls map.containsKey(e). remove(e) calls map.remove(e). This delegation means HashSet inherits HashMap's O(1) average for add/contains/remove and the same collision behavior."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "HashSet Internal Implementation (Simplified)",
+        "code": "public class HashSet<E> {\n    private transient HashMap<E, Object> map;\n    private static final Object PRESENT = new Object();\n\n    public HashSet() {\n        map = new HashMap<>();\n    }\n\n    public boolean add(E e) {\n        return map.put(e, PRESENT) == null;\n    }\n\n    public boolean contains(Object o) {\n        return map.containsKey(o);\n    }\n\n    public boolean remove(Object o) {\n        return map.remove(o) == PRESENT;\n    }\n\n    public int size() {\n        return map.size();\n    }\n}"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "HashSet is backed by HashMap — elements are keys, value is a dummy constant",
+          "LinkedHashSet uses LinkedHashMap — maintains insertion order",
+          "TreeSet uses TreeMap — maintains sorted order, O(log n) operations",
+          "Set.of() (Java 9+) creates unmodifiable sets — highly memory-efficient",
+          "equals() and hashCode() contract is critical — inconsistency breaks Set behavior"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "How does HashSet ensure uniqueness?",
+        "answer": "HashSet delegates to HashMap internally. When you call add(e), it calls map.put(e, PRESENT). HashMap's put() computes the hash, finds the bucket, and checks each existing key using both hash equality AND equals(). If an equal key already exists, put() replaces the value (the dummy PRESENT) and returns the old value — which signals to HashSet that the element was a duplicate. If no equal key exists, the element is added and put() returns null."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "hashCode/equals Contract Violation",
+        "mistake": "Overriding equals() without overriding hashCode() — objects that are equal but have different hash codes can both exist in the same Set.",
+        "correct": "Contract: if a.equals(b) then a.hashCode() == b.hashCode(). If you break this, HashSet puts them in different buckets, so contains() can't find 'equal' objects. Always override both methods together.",
+        "codeExample": "class Person {\n    String name;\n    @Override public boolean equals(Object o) {\n        return name.equals(((Person) o).name);\n    }\n    // Missing hashCode()!\n}\n\nSet<Person> set = new HashSet<>();\nset.add(new Person(\"Alice\"));\nset.contains(new Person(\"Alice\")); // may return FALSE!"
+      }
+    ]
+  },
+  {
+    "id": "sequenced-collections",
+    "title": "Sequenced Collections (Java 21)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Filling the Encounter-Order Gap",
+        "paragraphs": [
+          "Before Java 21, accessing the first or last element of a collection was inconsistent: List had get(0) and get(size()-1), SortedSet had first() and last(), LinkedHashSet had no direct access at all, and Deque had getFirst() and getLast(). Sequenced Collections unify this with three new interfaces.",
+          "SequencedCollection extends Collection and adds: addFirst(), addLast(), getFirst(), getLast(), removeFirst(), removeLast(), and reversed(). SequencedSet extends SequencedCollection + Set. SequencedMap extends Map and adds: firstEntry(), lastEntry(), pollFirstEntry(), pollLastEntry(), and sequencedKeySet()."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Sequenced Collections API",
+        "code": "// Works with List, LinkedHashSet, SortedSet, etc.\nSequencedCollection<String> list = new ArrayList<>(List.of(\"A\", \"B\", \"C\"));\nlist.getFirst();  // \"A\"\nlist.getLast();   // \"C\"\nlist.addFirst(\"Z\"); // [\"Z\", \"A\", \"B\", \"C\"]\nlist.reversed();  // reversed view: [\"C\", \"B\", \"A\", \"Z\"]\n\n// LinkedHashSet now has first/last access\nSequencedSet<String> set = new LinkedHashSet<>(List.of(\"X\", \"Y\", \"Z\"));\nset.getFirst();  // \"X\"\nset.getLast();   // \"Z\"\n\n// SequencedMap\nSequencedMap<String, Integer> map = new LinkedHashMap<>();\nmap.put(\"a\", 1);\nmap.put(\"b\", 2);\nmap.firstEntry();  // a=1\nmap.lastEntry();   // b=2"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "SequencedCollection: getFirst(), getLast(), addFirst(), addLast(), reversed()",
+          "SequencedSet: extends SequencedCollection + Set",
+          "SequencedMap: firstEntry(), lastEntry(), sequencedKeySet()",
+          "reversed() returns a view, not a copy — changes reflect in the original",
+          "List, LinkedHashSet, TreeSet, LinkedHashMap, TreeMap all implement the new interfaces",
+          "Unifies first/last access across all ordered collections"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What problem do Sequenced Collections solve in Java 21?",
+        "answer": "Before Java 21, accessing first/last elements was inconsistent across collection types: List used get(0)/get(size()-1), SortedSet used first()/last(), LinkedHashSet had no direct API, and Deque used getFirst()/getLast(). Sequenced Collections add three new interfaces (SequencedCollection, SequencedSet, SequencedMap) with uniform getFirst(), getLast(), and reversed() methods across all ordered collections, making the API consistent and discoverable."
+      }
+    ],
+    "trickyPoints": []
+  },
+  {
+    "id": "specialized-collections",
+    "title": "Specialized Collections",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "EnumMap, EnumSet, IdentityHashMap",
+        "paragraphs": [
+          "EnumMap<K extends Enum<K>, V> is a high-performance Map for enum keys. Internally, it uses an array indexed by the enum ordinal — no hashing, no collisions, O(1) constant-time operations, and extremely memory-efficient. Always prefer EnumMap when your keys are enums.",
+          "EnumSet<E extends Enum<E>> is the Set equivalent — backed by bit vectors. For enums with ≤64 values, it uses a single long (RegularEnumSet). For larger enums, it uses long[] (JumboEnumSet). Operations like add, contains, and iteration are bit-level operations — blazingly fast. IdentityHashMap uses reference equality (==) instead of equals() — useful for topology-preserving operations like serialization and object graph traversal."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Specialized Collections Usage",
+        "code": "// EnumMap — fastest Map for enum keys\nenum Day { MON, TUE, WED, THU, FRI, SAT, SUN }\n\nMap<Day, String> schedule = new EnumMap<>(Day.class);\nschedule.put(Day.MON, \"Sprint Planning\");\nschedule.put(Day.FRI, \"Retro\");\n\n// EnumSet — bit-vector powered Set\nEnumSet<Day> weekdays = EnumSet.range(Day.MON, Day.FRI);\nEnumSet<Day> weekend = EnumSet.complementOf(weekdays);\n// EnumSet.allOf(), EnumSet.noneOf(), EnumSet.of()\n\n// IdentityHashMap — uses == instead of equals()\nIdentityHashMap<String, Integer> map = new IdentityHashMap<>();\nString a = new String(\"key\");\nString b = new String(\"key\");\nmap.put(a, 1);\nmap.put(b, 2);\nmap.size(); // 2! (a != b by reference, even though a.equals(b))"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "EnumMap: array-backed, O(1), no hashing — always use for enum keys",
+          "EnumSet: bit-vector, EnumSet.range(), EnumSet.complementOf() — set operations on enums",
+          "EnumSet.noneOf() for empty, EnumSet.allOf() for full, EnumSet.of() for specific values",
+          "IdentityHashMap uses == not equals() — for object identity tracking",
+          "WeakHashMap: keys are weak references — entries auto-removed when key is GC'd"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "Why should you prefer EnumMap over HashMap when keys are enums?",
+        "answer": "EnumMap is backed by a simple array indexed by enum ordinal — no hashing, no collisions, no tree/list structures. This gives it: (1) Guaranteed O(1) operations with zero collision overhead, (2) Lower memory usage (~1 reference per value vs. Node objects), (3) Better cache locality (contiguous array), (4) Faster iteration (no empty buckets to skip). It's a specialized, purpose-built data structure that's always faster and more memory-efficient than HashMap for enum keys."
+      }
+    ],
+    "trickyPoints": []
+  },
+  {
+    "id": "generics",
+    "title": "Generics & Type Erasure",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Type Erasure: Java's Dirty Secret",
+        "paragraphs": [
+          "Java generics are a compile-time feature. After compilation, all generic type information is erased — List<String> and List<Integer> become just List (raw type) in bytecode. This was done for backward compatibility with pre-Java 5 code. The compiler checks type safety and inserts casts automatically — at runtime, the JVM has no knowledge of generic types.",
+          "Consequences of erasure: you can't use instanceof with generics (obj instanceof List<String>), can't create generic arrays (new T[10]), can't call new T(), and can't overload methods that differ only in generic type parameters (void foo(List<String>) vs void foo(List<Integer>) — both erase to foo(List))."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "PECS: Producer Extends, Consumer Super",
+        "paragraphs": [
+          "Wildcards enable variance in generics. ? extends T (upper bound) means 'any subtype of T' — safe to read T from it but not write (you don't know the exact type). ? super T (lower bound) means 'any supertype of T' — safe to write T to it but reading gives Object.",
+          "PECS mnemonic: if a collection produces items for you to use, use extends (read). If it consumes items from you, use super (write). Collections.copy(List<? super T> dest, List<? extends T> src) is the textbook example — src produces (extends), dest consumes (super)."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "PECS in Practice",
+        "code": "// PECS: Producer Extends, Consumer Super\n\n// Producer — read from it (extends)\nvoid printAll(List<? extends Number> list) {\n    for (Number n : list) {\n        System.out.println(n); // Safe to read as Number\n    }\n    // list.add(1); // COMPILE ERROR — can't write!\n}\nprintAll(List.of(1, 2, 3));       // List<Integer> ✅\nprintAll(List.of(1.0, 2.0));       // List<Double> ✅\n\n// Consumer — write to it (super)\nvoid addNumbers(List<? super Integer> list) {\n    list.add(1);       // Safe to write Integer\n    list.add(2);\n    // Integer n = list.get(0); // COMPILE ERROR — returns Object\n}\naddNumbers(new ArrayList<Number>());  // ✅\naddNumbers(new ArrayList<Object>());  // ✅\n\n// The textbook example\nCollections.copy(\n    List<? super T> dest,     // Consumer (super) — writes to it\n    List<? extends T> src     // Producer (extends) — reads from it\n);"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Type erasure removes generic info at compile time — JVM sees raw types only",
+          "You can't use instanceof or create arrays with parameterized types",
+          "PECS: Producer Extends (read from), Consumer Super (write to)",
+          "? extends T — upper bound, read-only (returns T)",
+          "? super T — lower bound, write-only (accepts T)",
+          "Unbounded wildcard (?) is read-only and returns Object",
+          "Type tokens (Class<T>) can preserve generic info at runtime"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is type erasure and what are its limitations?",
+        "answer": "Type erasure is Java's implementation strategy for generics — generic type parameters are removed after compilation for backward compatibility. At runtime, List<String> and List<Integer> are identical (both just List). Limitations: (1) Can't use instanceof with generics, (2) Can't create generic arrays (new T[]), (3) Can't call new T(), (4) Can't have overloaded methods differing only in generic types, (5) Runtime exceptions can bypass generic type safety via raw types. Workaround: pass Class<T> as a type token for runtime type access."
+      },
+      {
+        "question": "Explain PECS with an example.",
+        "answer": "PECS = Producer Extends, Consumer Super. If a generic collection produces data for you to read, use ? extends T — it guarantees everything in the collection IS-A T, safe to read as T. If it consumes data from you (you write to it), use ? super T — it guarantees T can be placed into it. Example: Collections.copy(List<? super T> dest, List<? extends T> src) — src produces (extends, we read from it), dest consumes (super, we write to it). This is Joshua Bloch's guideline from Effective Java."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Generic Method Overloading Erasure Clash",
+        "mistake": "Trying to overload methods that only differ in generic parameters — they erase to the same signature.",
+        "correct": "After erasure, void process(List<String>) and void process(List<Integer>) both become void process(List). Give the methods different names or use different parameter counts.",
+        "codeExample": "// COMPILE ERROR — both erase to process(List)\nvoid process(List<String> strings) { }\nvoid process(List<Integer> numbers) { }\n\n// Fix: different names\nvoid processStrings(List<String> strings) { }\nvoid processNumbers(List<Integer> numbers) { }"
+      }
+    ]
+  }
+]

@@ -1,0 +1,238 @@
+/* ============================================
+   Header Component — Module CSS
+   ============================================ */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 var(--content-padding);
+  transition: all 0.35s ease;
+  backdrop-filter: blur(0px);
+  background: transparent;
+}
+
+.header--scrolled {
+  backdrop-filter: blur(16px);
+  background: rgba(10, 14, 26, 0.85);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.headerInner {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.brandIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.brand:hover .brandIcon {
+  border-color: rgba(255, 140, 0, 0.5);
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.15);
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandName {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.brandTagline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--orange);
+  opacity: 0.7;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navLink {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navLink--active {
+  color: var(--orange);
+}
+
+.navCta {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: var(--bg-start);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  margin-left: 8px;
+}
+
+.navCta:hover {
+  box-shadow: 0 0 24px rgba(255, 140, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Mobile menu button */
+.menuBtn {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.menuBtn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.menuBtn--open span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.menuBtn--open span:nth-child(2) {
+  opacity: 0;
+}
+
+.menuBtn--open span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Mobile nav */
+.mobileNav {
+  display: none;
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 14, 26, 0.97);
+  backdrop-filter: blur(20px);
+  padding: 32px var(--content-padding);
+  flex-direction: column;
+  gap: 8px;
+  z-index: 99;
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.mobileNav--open {
+  display: flex;
+}
+
+.mobileNavLink {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--text-secondary);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mobileNavLink:hover {
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+.mobileNavCta {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 16px 20px;
+  margin-top: 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: var(--bg-start);
+  cursor: pointer;
+  border: none;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .headerInner {
+    height: 64px;
+  }
+
+  .navLinks {
+    display: none;
+  }
+
+  .menuBtn {
+    display: flex;
+  }
+
+  .brandName {
+    font-size: 16px;
+  }
+
+  .brandIcon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .brandTagline {
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+}

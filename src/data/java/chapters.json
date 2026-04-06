@@ -1,0 +1,82 @@
+[
+  {
+    "id": "fundamentals",
+    "title": "Language Fundamentals & Core Syntax",
+    "icon": "🏗️",
+    "topics": [
+      { "id": "jvm-architecture", "title": "JVM Architecture" },
+      { "id": "memory-management", "title": "Memory Management" },
+      { "id": "data-types", "title": "Data Types & Type System" },
+      { "id": "strings", "title": "Strings Deep Dive" },
+      { "id": "oop-deep-dive", "title": "OOP Deep Dive" },
+      { "id": "control-flow", "title": "Control Flow & Modern Syntax" }
+    ]
+  },
+  {
+    "id": "advanced-features",
+    "title": "Advanced Language Features (Java 8-21)",
+    "icon": "⚡",
+    "topics": [
+      { "id": "functional-programming", "title": "Functional Programming" },
+      { "id": "streams-api", "title": "Streams API" },
+      { "id": "optional-class", "title": "Optional Class" },
+      { "id": "sealed-classes", "title": "Sealed Classes & Interfaces" },
+      { "id": "records", "title": "Records" },
+      { "id": "pattern-matching", "title": "Pattern Matching" },
+      { "id": "text-blocks", "title": "Text Blocks" },
+      { "id": "string-templates", "title": "String Templates" }
+    ]
+  },
+  {
+    "id": "collections",
+    "title": "Collections & Data Structures Internals",
+    "icon": "📦",
+    "topics": [
+      { "id": "list-internals", "title": "List: ArrayList vs LinkedList" },
+      { "id": "map-internals", "title": "Map Internals: HashMap & ConcurrentHashMap" },
+      { "id": "set-internals", "title": "Set: HashSet Internals" },
+      { "id": "sequenced-collections", "title": "Sequenced Collections (Java 21)" },
+      { "id": "specialized-collections", "title": "Specialized Collections" },
+      { "id": "generics", "title": "Generics & Type Erasure" }
+    ]
+  },
+  {
+    "id": "concurrency",
+    "title": "Multithreading & Modern Concurrency",
+    "icon": "🔄",
+    "topics": [
+      { "id": "concurrency-basics", "title": "Concurrency Basics" },
+      { "id": "executor-framework", "title": "Executor Framework" },
+      { "id": "synchronizers", "title": "Advanced Synchronizers" },
+      { "id": "completable-future", "title": "CompletableFuture" },
+      { "id": "virtual-threads", "title": "Virtual Threads (Project Loom)" },
+      { "id": "structured-concurrency", "title": "Structured Concurrency" },
+      { "id": "scoped-values", "title": "Scoped Values" },
+      { "id": "java-memory-model", "title": "Java Memory Model (JMM)" }
+    ]
+  },
+  {
+    "id": "io-reflection",
+    "title": "I/O, Networking & Reflection",
+    "icon": "🔌",
+    "topics": [
+      { "id": "standard-io", "title": "Standard I/O & Serialization" },
+      { "id": "nio", "title": "NIO: Non-Blocking I/O" },
+      { "id": "reflection-api", "title": "Reflection API" },
+      { "id": "method-handles", "title": "Method Handles" },
+      { "id": "http-client", "title": "HTTP Client (Java 11+)" }
+    ]
+  },
+  {
+    "id": "jvm-performance",
+    "title": "JVM Internals & Performance Tuning",
+    "icon": "🔬",
+    "topics": [
+      { "id": "garbage-collection", "title": "Garbage Collection" },
+      { "id": "jit-compilation", "title": "JIT Compilation" },
+      { "id": "performance-profiling", "title": "Performance Profiling" },
+      { "id": "foreign-memory", "title": "Foreign Function & Memory API" },
+      { "id": "class-loading", "title": "Class Loading" }
+    ]
+  }
+]

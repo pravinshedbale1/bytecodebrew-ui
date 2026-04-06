@@ -1,0 +1,10 @@
+{
+  "links": [
+    { "label": "Topics", "href": "#topics-section", "active": true },
+    { "label": "About", "href": "#about-section", "active": false }
+  ],
+  "cta": {
+    "label": "Start Learning",
+    "href": "#topics-section"
+  }
+}

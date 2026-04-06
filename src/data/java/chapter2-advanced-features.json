@@ -1,0 +1,531 @@
+[
+  {
+    "id": "functional-programming",
+    "title": "Functional Programming",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Lambda Expressions & Method References",
+        "paragraphs": [
+          "Lambda expressions (Java 8) are concise representations of anonymous functions. They implement functional interfaces — interfaces with a single abstract method (SAM). The syntax (parameters) -> expression replaces verbose anonymous inner classes, making code more readable and enabling a functional programming style in Java.",
+          "Method references (::) are even more concise when a lambda simply delegates to an existing method. There are four types: static reference (Class::staticMethod), instance reference (instance::method), arbitrary instance (Class::instanceMethod), and constructor reference (Class::new)."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Lambda Expressions & Method References",
+        "code": "// Anonymous inner class (old way)\nComparator<String> comp = new Comparator<String>() {\n    @Override\n    public int compare(String a, String b) {\n        return a.compareTo(b);\n    }\n};\n\n// Lambda expression\nComparator<String> comp = (a, b) -> a.compareTo(b);\n\n// Method reference — even simpler\nComparator<String> comp = String::compareTo;\n\n// Four types of method references\nFunction<String, Integer> parse = Integer::parseInt;        // static\nConsumer<String> printer = System.out::println;            // instance\nFunction<String, String> upper = String::toUpperCase;      // arbitrary instance\nSupplier<ArrayList<String>> factory = ArrayList::new;      // constructor"
+      },
+      {
+        "type": "explanation",
+        "heading": "How Lambdas Work Internally — invokedynamic",
+        "paragraphs": [
+          "Unlike anonymous inner classes (which create a new .class file for each), lambdas use the invokedynamic bytecode instruction introduced in Java 7. At first invocation, invokedynamic calls LambdaMetafactory.metafactory() which dynamically generates a lightweight class implementing the functional interface. Subsequent calls reuse the generated class — no new object allocation.",
+          "This means lambdas are NOT syntactic sugar for anonymous classes. They're more efficient: no extra .class files at compile time, no object header overhead for stateless lambdas (the JVM can cache a single instance), and better JIT optimization potential since the JVM understands the lambda's structure.",
+          "Variable capture rules: lambdas can access local variables from their enclosing scope, but only if they're effectively final (never modified after initialization). This restriction exists because the captured value is a snapshot — if it could change, it would create confusing semantics and potential race conditions in concurrent code. Instance variables and static variables can be accessed freely because they're on the heap."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Key Functional Interfaces",
+        "paragraphs": [
+          "Java 8 provides core functional interfaces in java.util.function. The four pillars: Predicate<T> (T → boolean, for filtering), Function<T,R> (T → R, for transformation), Consumer<T> (T → void, for side effects), and Supplier<T> (() → T, for lazy generation). There are also bi-variants (BiFunction, BiPredicate) and primitive specializations (IntPredicate, LongFunction) to avoid autoboxing.",
+          "Additional important interfaces: UnaryOperator<T> extends Function<T,T> — same input and output type (e.g., String::toUpperCase). BinaryOperator<T> extends BiFunction<T,T,T> — takes two of same type (e.g., Integer::sum). BiConsumer<T,U> consumes two args (e.g., Map.forEach). BiPredicate<T,U> tests two args.",
+          "These interfaces are composable: predicate.and(), predicate.or(), predicate.negate(), function.andThen(), function.compose(). This composability is what makes functional programming powerful — you build complex behavior by combining simple, testable pieces."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Core Functional Interfaces",
+        "headers": ["Interface", "Method", "Signature", "Use Case"],
+        "rows": [
+          ["Predicate<T>", "test(T)", "T → boolean", "Filtering, conditions"],
+          ["Function<T,R>", "apply(T)", "T → R", "Transformation, mapping"],
+          ["Consumer<T>", "accept(T)", "T → void", "Side effects, forEach"],
+          ["Supplier<T>", "get()", "() → T", "Lazy creation, factory"],
+          ["UnaryOperator<T>", "apply(T)", "T → T", "Same-type transformation"],
+          ["BinaryOperator<T>", "apply(T,T)", "(T,T) → T", "Reduction (sum, max)"],
+          ["BiFunction<T,U,R>", "apply(T,U)", "(T,U) → R", "Two-arg transformation"],
+          ["BiConsumer<T,U>", "accept(T,U)", "(T,U) → void", "Map.forEach"],
+          ["BiPredicate<T,U>", "test(T,U)", "(T,U) → boolean", "Two-arg conditions"]
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Function Composition & Custom Functional Interfaces",
+        "code": "// Predicate composition\nPredicate<String> notEmpty = s -> !s.isEmpty();\nPredicate<String> startsWithA = s -> s.startsWith(\"A\");\nPredicate<String> combined = notEmpty.and(startsWithA); // both must be true\nPredicate<String> either = notEmpty.or(startsWithA);    // either is true\nPredicate<String> negated = notEmpty.negate();           // invert\n\n// Function composition\nFunction<String, String> trim = String::trim;\nFunction<String, String> upper = String::toUpperCase;\nFunction<String, String> pipeline = trim.andThen(upper); // trim first, then upper\nFunction<String, String> reverse = upper.compose(trim);  // same effect, opposite order\n\npipeline.apply(\"  hello  \"); // \"HELLO\"\n\n// Custom functional interface\n@FunctionalInterface\ninterface Converter<F, T> {\n    T convert(F from);\n    // Can have default and static methods too!\n    default <V> Converter<F, V> andThen(Converter<T, V> after) {\n        return f -> after.convert(this.convert(f));\n    }\n}\n\nConverter<String, Integer> toInt = Integer::valueOf;\nConverter<Integer, String> toBinary = Integer::toBinaryString;\nConverter<String, String> pipeline2 = toInt.andThen(toBinary);\npipeline2.convert(\"42\"); // \"101010\""
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Lambdas implement functional interfaces (exactly one abstract method)",
+          "@FunctionalInterface annotation enforces the SAM rule at compile time",
+          "Lambdas use invokedynamic + LambdaMetafactory — NOT anonymous inner classes",
+          "Stateless lambdas can be cached as singletons by the JVM — zero allocation",
+          "Method references (::) are shorthand when a lambda just calls an existing method",
+          "Lambdas capture effectively final variables from the enclosing scope",
+          "Use primitive specializations (IntPredicate, LongSupplier) to avoid autoboxing overhead",
+          "Functional interfaces are composable with and(), or(), andThen(), compose(), negate()",
+          "UnaryOperator<T> = Function<T,T>, BinaryOperator<T> = BiFunction<T,T,T>",
+          "Custom functional interfaces can have default methods for composition chains"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is a functional interface? Can it have multiple methods?",
+        "answer": "A functional interface has exactly one abstract method (SAM — Single Abstract Method). However, it CAN have multiple default methods, static methods, and methods inherited from Object (like toString, equals). The @FunctionalInterface annotation is optional but recommended — it causes a compile error if the interface doesn't qualify. Examples: Runnable (run()), Comparator (compare()), and all java.util.function interfaces."
+      },
+      {
+        "question": "What does 'effectively final' mean in the context of lambdas?",
+        "answer": "A variable is effectively final if it's never modified after initialization, even without the 'final' keyword. Lambdas can capture local variables from their enclosing scope, but only if those variables are effectively final. This restriction exists because lambdas may execute on a different thread — if the variable could change, it would create race conditions. The captured value is essentially a snapshot at the time of lambda creation."
+      },
+      {
+        "question": "How are lambdas different from anonymous inner classes internally?",
+        "answer": "Anonymous inner classes generate a separate .class file for each occurrence, create a new object on every instantiation, and capture 'this' of the enclosing class. Lambdas use invokedynamic + LambdaMetafactory to generate a lightweight class at first call, can be cached as singletons when stateless (zero allocation), and don't implicitly capture 'this' unless needed. Lambdas are more efficient in memory and performance, and they produce cleaner bytecode."
+      },
+      {
+        "question": "Explain the difference between Function.andThen() and Function.compose().",
+        "answer": "Both chain two functions together but in opposite order. f.andThen(g) applies f first, then g: result = g(f(input)). f.compose(g) applies g first, then f: result = f(g(input)). Think of andThen as 'then do this next' (left to right), compose as 'first do this' (right to left, like mathematical function composition). Both return a new Function that represents the combined operation."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Capturing Mutable State in Lambdas",
+        "mistake": "Trying to modify a local variable inside a lambda — causes a compilation error.",
+        "correct": "Use an AtomicInteger, array, or move the state to an instance variable. Or redesign to use a purely functional approach (reduce, collect).",
+        "codeExample": "int count = 0;\nlist.forEach(item -> count++); // COMPILE ERROR!\n\n// Workaround (but consider if you really need this)\nAtomicInteger count = new AtomicInteger(0);\nlist.forEach(item -> count.incrementAndGet());\n\n// Better: purely functional\nlong count = list.stream().count();"
+      },
+      {
+        "title": "Lambda 'this' Reference",
+        "mistake": "Expecting 'this' inside a lambda to refer to the lambda itself (like anonymous inner classes).",
+        "correct": "'this' inside a lambda refers to the enclosing class instance, NOT the lambda. In anonymous inner classes, 'this' refers to the anonymous class instance. This is a deliberate design difference — lambdas are not classes.",
+        "codeExample": "class Outer {\n    Runnable lambda = () -> {\n        System.out.println(this); // prints Outer instance!\n    };\n    Runnable anon = new Runnable() {\n        public void run() {\n            System.out.println(this); // prints anonymous class instance\n        }\n    };\n}"
+      }
+    ]
+  },
+  {
+    "id": "streams-api",
+    "title": "Streams API",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Streams: Declarative Data Processing",
+        "paragraphs": [
+          "The Streams API (Java 8) provides a declarative approach to processing collections. Instead of writing imperative loops (how to process), you describe what to process. A stream pipeline consists of a source, zero or more intermediate operations (lazy), and a terminal operation (triggers execution).",
+          "Key principle: streams are lazy. No computation happens until a terminal operation is invoked. Intermediate operations (filter, map, sorted) are stacked up as a pipeline recipe. The terminal operation (collect, forEach, reduce) triggers the entire pipeline to execute in a single pass."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Stream Pipeline Anatomy",
+        "code": "List<String> result = employees.stream()        // Source\n    .filter(e -> e.getSalary() > 50000)          // Intermediate: filter\n    .map(Employee::getName)                       // Intermediate: transform\n    .sorted()                                     // Intermediate: sort\n    .distinct()                                   // Intermediate: deduplicate\n    .limit(10)                                    // Intermediate: truncate\n    .collect(Collectors.toList());                // Terminal: execute + collect\n\n// Nothing happens until collect() is called!\n// All intermediates are lazy — they build a pipeline."
+      },
+      {
+        "type": "table",
+        "title": "Intermediate vs Terminal Operations",
+        "headers": ["Category", "Operations", "Returns", "Lazy?"],
+        "rows": [
+          ["Intermediate", "filter, map, flatMap, sorted, distinct, limit, skip, peek", "Stream<T>", "✅ Yes"],
+          ["Terminal", "collect, forEach, reduce, count, findFirst, findAny, min, max, anyMatch", "Result / void", "❌ No (triggers execution)"],
+          ["Short-circuiting", "limit, findFirst, findAny, anyMatch, allMatch, noneMatch", "Varies", "Stops early when possible"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Collectors: The Power of collect()",
+        "paragraphs": [
+          "The collect() terminal operation is the most versatile. Collectors utilities provide pre-built collectors: toList(), toSet(), toMap(), groupingBy(), partitioningBy(), joining(), summarizingInt(), and more. Custom collectors can be built using Collector.of().",
+          "groupingBy() is the stream equivalent of SQL's GROUP BY — it partitions elements into a Map based on a classifier function. It supports downstream collectors for aggregation (counting, summing, averaging, mapping) — this is where streams become extremely powerful."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Powerful Collector Patterns",
+        "code": "// Group employees by department\nMap<String, List<Employee>> byDept = employees.stream()\n    .collect(Collectors.groupingBy(Employee::getDepartment));\n\n// Group by department, then count\nMap<String, Long> deptCounts = employees.stream()\n    .collect(Collectors.groupingBy(\n        Employee::getDepartment, Collectors.counting()));\n\n// Group by department, then get average salary\nMap<String, Double> avgSalary = employees.stream()\n    .collect(Collectors.groupingBy(\n        Employee::getDepartment,\n        Collectors.averagingDouble(Employee::getSalary)));\n\n// Partition into two groups (predicate-based)\nMap<Boolean, List<Employee>> partitioned = employees.stream()\n    .collect(Collectors.partitioningBy(\n        e -> e.getSalary() > 100000));\n\n// Join strings with delimiter\nString names = employees.stream()\n    .map(Employee::getName)\n    .collect(Collectors.joining(\", \")); // \"Alice, Bob, Carol\""
+      },
+      {
+        "type": "explanation",
+        "heading": "Parallel Streams: Use With Caution",
+        "paragraphs": [
+          "Calling .parallelStream() or .parallel() splits the stream across multiple threads using the ForkJoinPool.commonPool(). This sounds great but introduces several pitfalls: shared state mutation, ordering guarantees, and thread pool exhaustion.",
+          "Parallel streams are beneficial only when: the data source is large (10,000+ elements), operations are CPU-intensive, the source supports efficient splitting (ArrayList good, LinkedList bad), and there's no shared mutable state. For I/O-bound or small datasets, parallel streams add overhead without benefit."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "reduce() — Immutable Accumulation",
+        "paragraphs": [
+          "reduce() combines stream elements into a single result through repeated application of a combining function. It has three forms: (1) reduce(BinaryOperator) returns Optional (stream might be empty), (2) reduce(identity, BinaryOperator) uses a seed value (never returns empty), (3) reduce(identity, BiFunction accumulator, BinaryOperator combiner) for parallel reduction with type change.",
+          "The identity value must be a true mathematical identity for the operation: 0 for addition, 1 for multiplication, empty string for concatenation. Using a wrong identity (like 10 for addition) breaks parallel streams because the identity is applied per parallel segment."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "reduce(), flatMap(), toMap(), and teeing()",
+        "code": "// reduce() — three forms\nOptional<Integer> sum = numbers.stream().reduce(Integer::sum); // form 1\nint total = numbers.stream().reduce(0, Integer::sum);          // form 2\nString concat = words.stream().reduce(\"\", String::concat);     // identity = \"\"\n\n// Custom reduce — find longest string\nOptional<String> longest = words.stream()\n    .reduce((a, b) -> a.length() >= b.length() ? a : b);\n\n// flatMap — real-world: flatten nested lists\nList<List<String>> nested = List.of(List.of(\"a\",\"b\"), List.of(\"c\",\"d\"));\nList<String> flat = nested.stream()\n    .flatMap(Collection::stream)  // Stream<List> → Stream<String>\n    .toList(); // [\"a\", \"b\", \"c\", \"d\"]\n\n// flatMap with Optional integration\nList<String> emails = users.stream()\n    .map(User::getEmail)           // Stream<Optional<String>>\n    .flatMap(Optional::stream)     // Stream<String> — removes empties\n    .toList();\n\n// toMap with merge function (handle duplicate keys)\nMap<String, Integer> wordCount = words.stream()\n    .collect(Collectors.toMap(\n        w -> w,             // key\n        w -> 1,             // value\n        Integer::sum));     // merge: sum counts for duplicate keys\n\n// Collectors.teeing() (Java 12+) — two collectors at once\nvar result = employees.stream().collect(Collectors.teeing(\n    Collectors.averagingDouble(Employee::getSalary),   // collector 1\n    Collectors.counting(),                              // collector 2\n    (avg, count) -> \"Avg salary: \" + avg + \", Count: \" + count\n));\n\n// Stream.iterate and Stream.generate\nStream.iterate(0, n -> n + 2).limit(5);       // 0, 2, 4, 6, 8\nStream.iterate(1, n -> n <= 100, n -> n * 2); // 1, 2, 4, 8, 16, 32, 64 (Java 9)\nStream.generate(Math::random).limit(3);        // 3 random numbers"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Streams are lazy — no work until a terminal operation triggers the pipeline",
+          "A stream can only be consumed once — reuse requires creating a new stream",
+          "flatMap flattens nested structures: Stream<List<T>> → Stream<T>",
+          "reduce() for immutable accumulation (sum, max, concat); collect() for mutable (list, map, StringBuilder)",
+          "toMap() needs a merge function when keys can collide — otherwise throws IllegalStateException",
+          "Collectors.groupingBy() is the stream equivalent of SQL GROUP BY",
+          "Collectors.teeing() (Java 12+) applies two collectors simultaneously and merges results",
+          "Stream.iterate() with predicate (Java 9+) replaces many while-loop patterns",
+          "Parallel streams use the common ForkJoinPool — blocking ops can starve it",
+          "Order matters: filter before map (reduces work), sort last (expensive on large data)",
+          "Use peek() for debugging only — not for side effects in production"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the difference between map() and flatMap() in streams?",
+        "answer": "map() transforms each element one-to-one: Stream<T> → Stream<R>. flatMap() transforms each element into a stream and flattens them: Stream<T> → Stream<R> where each T can produce 0, 1, or many R elements. Use case: if you have a List<List<String>>, map gives you Stream<List<String>>, while flatMap gives you Stream<String> — it flattens nested structures."
+      },
+      {
+        "question": "Explain the three forms of reduce() and when to use each.",
+        "answer": "Form 1: reduce(BinaryOperator) — returns Optional, handles empty streams. Example: stream.reduce(Integer::sum). Form 2: reduce(identity, BinaryOperator) — provides seed value, returns T directly. Identity must be a true mathematical identity (0 for sum, 1 for product). Example: stream.reduce(0, Integer::sum). Form 3: reduce(identity, BiFunction, BinaryOperator) — for parallel reduction with type change. The combiner merges partial results from parallel segments. Use form 1 for safe optional results, form 2 when a default makes sense, form 3 rarely (prefer collect for type-changing reductions)."
+      },
+      {
+        "question": "What happens when Collectors.toMap() encounters duplicate keys?",
+        "answer": "Without a merge function, toMap() throws IllegalStateException on duplicate keys. To handle duplicates, provide a merge function as the third argument: Collectors.toMap(keyMapper, valueMapper, mergeFunction). Common merge strategies: (a, b) -> a (keep first), (a, b) -> b (keep last), Integer::sum (sum values), (a, b) -> a + ',' + b (concatenate). You can also provide a fourth argument for the Map implementation: toMap(key, value, merge, TreeMap::new)."
+      },
+      {
+        "question": "When should you use parallel streams and when should you avoid them?",
+        "answer": "Use parallel streams when: (1) dataset is large (10K+ elements), (2) operations are CPU-intensive (mathematical computations), (3) source supports efficient splitting (ArrayList, arrays — NOT LinkedList), (4) operations are stateless and independent. Avoid when: (1) I/O-bound operations (blocking threads starves the ForkJoinPool), (2) small datasets (overhead exceeds benefit), (3) ordered operations are required (parallelism breaks order), (4) any shared mutable state exists (race conditions)."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Streams Are Single-Use",
+        "mistake": "Trying to reuse a stream after a terminal operation — throws IllegalStateException.",
+        "correct": "Create a new stream for each pipeline. If you need the same source multiple times, store the data in a collection first, or create a Supplier<Stream<T>>.",
+        "codeExample": "Stream<String> s = list.stream();\ns.forEach(System.out::println);\ns.count(); // IllegalStateException: stream already closed!\n\n// Correct: create a new stream\nSupplier<Stream<String>> supplier = list::stream;\nsupplier.get().forEach(System.out::println);\nlong count = supplier.get().count();"
+      },
+      {
+        "title": "reduce() vs collect() Confusion",
+        "mistake": "Using reduce() with a mutable container (like StringBuilder) — reduce expects immutable accumulation.",
+        "correct": "Use reduce() for immutable value reduction (sum, max, string concatenation). Use collect() for mutable reduction (building lists, maps, StringBuilder). This distinction is critical for parallel stream correctness.",
+        "codeExample": "// WRONG — reduce with mutable state\nStringBuilder result = stream.reduce(\n    new StringBuilder(),\n    (sb, s) -> sb.append(s),    // mutates sb!\n    (sb1, sb2) -> sb1.append(sb2));\n\n// CORRECT — collect for mutable accumulation\nString result = stream.collect(\n    Collectors.joining());"
+      }
+    ]
+  },
+  {
+    "id": "optional-class",
+    "title": "Optional Class",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Optional: Explicit Null Handling",
+        "paragraphs": [
+          "Optional<T> (Java 8) is a container that may or may not hold a non-null value. It forces callers to explicitly handle the absence of a value instead of silently allowing null references that lead to NullPointerException at unpredictable points in code.",
+          "Optional is designed for return types, not for fields, parameters, or collections. It's a signal from the API designer saying: 'this value might not exist, handle it.' Using Optional incorrectly (as constructor parameters, in collections, serialized fields) is an anti-pattern."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Optional API Essentials",
+        "code": "// Creating Optional\nOptional<String> present = Optional.of(\"hello\");     // throws if null\nOptional<String> nullable = Optional.ofNullable(str); // safe for nulls\nOptional<String> empty = Optional.empty();\n\n// Accessing values — AVOID get()!\nString safe = present.orElse(\"default\");\nString lazy = present.orElseGet(() -> computeDefault());\nString strict = present.orElseThrow(() -> new NotFoundException());\nString jdk10 = present.orElseThrow();  // NoSuchElementException (Java 10+)\n\n// Functional chaining\nOptional<String> result = findUser(id)\n    .filter(u -> u.isActive())\n    .map(User::getEmail)\n    .flatMap(this::validateEmail);\n\n// Java 9+ additions\npresent.ifPresentOrElse(\n    email -> sendEmail(email),\n    () -> logNoEmail()\n);\n\n// Java 9: Optional to Stream (0 or 1 element)\nStream<String> stream = present.stream();\n\n// Java 9: or() — lazy alternative Optional\nOptional<String> fallback = findInCache(key)\n    .or(() -> findInDB(key))\n    .or(() -> Optional.of(\"default\"));"
+      },
+      {
+        "type": "explanation",
+        "heading": "Optional Anti-Patterns",
+        "paragraphs": [
+          "The most common anti-pattern is using isPresent() + get() — this is just null checking with extra steps. The second is using Optional as a method parameter — it forces callers to wrap values in Optional, adding verbosity with no benefit. Use method overloading instead.",
+          "Never use Optional for class fields — it's not Serializable and adds 16 bytes of overhead per field. Don't use Optional in collections (List<Optional<T>> is wrong — just filter nulls). Don't use Optional.of(null) — it throws NPE. And NEVER return null from a method that returns Optional — this completely defeats the purpose."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Optional Anti-Patterns vs Best Practices",
+        "code": "// ❌ ANTI-PATTERN: isPresent() + get() — just a null check in disguise\nif (optional.isPresent()) {\n    doSomething(optional.get());\n}\n// ✅ CORRECT\noptional.ifPresent(this::doSomething);\n\n// ❌ ANTI-PATTERN: Optional as parameter\nvoid process(Optional<String> name) { ... }\n// ✅ CORRECT: use overloading or @Nullable\nvoid process(String name) { ... }\nvoid process() { process(\"default\"); }\n\n// ❌ ANTI-PATTERN: Optional for fields\nclass User {\n    private Optional<String> middleName;  // WRONG\n}\n// ✅ CORRECT: null field + Optional return\nclass User {\n    private String middleName;  // nullable\n    public Optional<String> getMiddleName() {\n        return Optional.ofNullable(middleName);\n    }\n}\n\n// ❌ ANTI-PATTERN: returning null from Optional method\nOptional<User> findUser(int id) {\n    return null;  // NEVER DO THIS!\n}\n// ✅ CORRECT\nOptional<User> findUser(int id) {\n    return Optional.ofNullable(repository.find(id));\n}"
+      },
+      {
+        "type": "explanation",
+        "heading": "Optional Chaining Patterns",
+        "paragraphs": [
+          "map() transforms the value inside Optional if present (Optional<T> → Optional<R>). flatMap() is for methods that themselves return Optional — it avoids Optional<Optional<R>>. filter() removes the value if the predicate fails, returning empty. These three operations enable powerful declarative chains.",
+          "A common real-world pattern: repository.findById(id).map(User::getAddress).map(Address::getCity).orElse('Unknown'). This replaces 4 null checks with a single, readable chain. The chain short-circuits on the first empty Optional."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Optional Chaining — Real-World Patterns",
+        "code": "// Deep null-safe navigation\nString city = findUser(userId)\n    .map(User::getAddress)        // Optional<Address>\n    .map(Address::getCity)        // Optional<String>\n    .orElse(\"Unknown\");           // String\n\n// flatMap for methods returning Optional\nOptional<Order> latestOrder = findUser(userId)\n    .flatMap(User::getLatestOrder);  // User → Optional<Order>\n\n// Combining filter + map\nOptional<String> validEmail = findUser(userId)\n    .map(User::getEmail)\n    .filter(email -> email.contains(\"@\"))\n    .filter(email -> !email.endsWith(\".invalid\"));\n\n// Converting Optional to Stream for integration\nList<String> activeEmails = userIds.stream()\n    .map(this::findUser)               // Stream<Optional<User>>\n    .flatMap(Optional::stream)          // Stream<User> (Java 9+)\n    .filter(User::isActive)\n    .map(User::getEmail)\n    .toList();"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Use Optional for return types only — never for fields, parameters, or collection elements",
+          "Never call .get() without checking — use orElse(), orElseGet(), or orElseThrow()",
+          "orElse() always evaluates its argument — use orElseGet() for expensive defaults",
+          "flatMap() avoids Optional<Optional<T>> when chaining methods that return Optional",
+          "Optional is not serializable — don't use it in entities or DTOs",
+          "isPresent() + get() is a null check in disguise — use ifPresent(), map(), orElse() instead",
+          "Optional.stream() (Java 9+) converts to a 0-or-1 element stream for integration with stream pipelines",
+          "or() (Java 9+) provides a lazy fallback Optional — great for cache-then-DB patterns",
+          "Never return null from a method with Optional return type"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the difference between orElse() and orElseGet()?",
+        "answer": "orElse(value) always evaluates the argument, even if the Optional has a value present. orElseGet(supplier) only invokes the supplier if the Optional is empty. For cheap defaults (constants, simple values), orElse() is fine. For expensive operations (database calls, object creation), always use orElseGet() to avoid unnecessary computation. Example: opt.orElse(fetchFromDB()) always calls fetchFromDB(), while opt.orElseGet(() -> fetchFromDB()) only calls it when opt is empty."
+      },
+      {
+        "question": "What are the common anti-patterns with Optional?",
+        "answer": "Five major anti-patterns: (1) isPresent() + get() — defeats the purpose, just use ifPresent/orElse. (2) Optional as method parameter — forces callers to wrap values. (3) Optional as class field — not serializable, adds overhead. (4) Optional in collections — use filter(Objects::nonNull) instead. (5) Returning null from Optional method — completely defeats the contract. The core rule: Optional is a return type signal saying 'this might be absent,' nothing more."
+      },
+      {
+        "question": "What is the difference between map() and flatMap() in Optional?",
+        "answer": "map(f) applies f to the value and wraps the result in Optional: if f returns R, you get Optional<R>. flatMap(f) expects f to return Optional<R> directly, avoiding double wrapping (Optional<Optional<R>>). Use map when the transformation returns a plain value (User::getName returns String). Use flatMap when it returns Optional (User::getAddress returns Optional<Address>). flatMap is essential for chaining methods that themselves indicate optionality."
+      },
+      {
+        "question": "How does Optional.stream() work and when would you use it?",
+        "answer": "Optional.stream() (Java 9+) converts an Optional into a Stream with either 0 elements (empty) or 1 element (present). Its killer use case is in stream pipelines where you need to filter out absent values: userIds.stream().map(this::findUser).flatMap(Optional::stream) converts Stream<Optional<User>> into Stream<User>, keeping only present values. Before Java 9, you had to use .filter(Optional::isPresent).map(Optional::get)."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "orElse() Always Evaluates",
+        "mistake": "Using orElse() with an expensive operation, not realizing it executes even when the value is present.",
+        "correct": "Use orElseGet() with a Supplier for expensive defaults — it's evaluated lazily only when needed.",
+        "codeExample": "// BAD — fetchFromDB() runs even if opt has a value!\nString val = opt.orElse(fetchFromDB());\n\n// GOOD — fetchFromDB() only runs if opt is empty\nString val = opt.orElseGet(() -> fetchFromDB());"
+      },
+      {
+        "title": "Optional.of(null) Throws NPE",
+        "mistake": "Using Optional.of() with a potentially null value, causing NullPointerException at Optional creation instead of at use.",
+        "correct": "Use Optional.ofNullable() when the value might be null. Use Optional.of() only when you're certain the value is non-null and want a fail-fast NPE if your assumption is wrong.",
+        "codeExample": "String val = null;\nOptional.of(val);         // NullPointerException!\nOptional.ofNullable(val); // Optional.empty() — safe"
+      },
+      {
+        "title": "Nested Optional from map()",
+        "mistake": "Using map() when the function returns Optional, creating Optional<Optional<T>>.",
+        "correct": "Use flatMap() when the mapping function itself returns Optional. This flattens the double wrapping into a single Optional<T>.",
+        "codeExample": "// BAD — map creates Optional<Optional<Address>>\nOptional<Optional<Address>> nested = user.map(User::getAddress);\n\n// GOOD — flatMap flattens to Optional<Address>\nOptional<Address> flat = user.flatMap(User::getAddress);"
+      }
+    ]
+  },
+  {
+    "id": "sealed-classes",
+    "title": "Sealed Classes & Interfaces",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Controlling Your Type Hierarchy",
+        "paragraphs": [
+          "Sealed classes (Java 17) let you restrict which classes can extend or implement a type. Before sealed classes, you could either make a class final (no extensions) or open (anyone can extend). Sealed classes provide a middle ground: you explicitly list permitted subclasses.",
+          "This is powerful for domain modeling where you want exhaustive type hierarchies. The compiler knows all possible subtypes, enabling exhaustive switch-pattern-matching checks without a default case."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Sealed Classes in Practice",
+        "code": "// Declare sealed hierarchy\npublic sealed interface Shape \n    permits Circle, Rectangle, Triangle {\n    double area();\n}\n\npublic final class Circle implements Shape {\n    private final double radius;\n    public Circle(double radius) { this.radius = radius; }\n    public double area() { return Math.PI * radius * radius; }\n}\n\npublic final class Rectangle implements Shape {\n    private final double w, h;\n    public Rectangle(double w, double h) { this.w = w; this.h = h; }\n    public double area() { return w * h; }\n}\n\npublic non-sealed class Triangle implements Shape {\n    // non-sealed: anyone can extend Triangle\n    private final double base, height;\n    public Triangle(double b, double h) { base = b; height = h; }\n    public double area() { return 0.5 * base * height; }\n}\n\n// Exhaustive pattern matching (Java 21)\nString describe(Shape s) {\n    return switch (s) {\n        case Circle c   -> \"Circle r=\" + c.getRadius();\n        case Rectangle r -> \"Rect \" + r.getW() + \"x\" + r.getH();\n        case Triangle t  -> \"Triangle\";\n        // No default needed — compiler knows all subtypes!\n    };\n}"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "sealed permits only listed subclasses — compiler enforces this",
+          "Subclasses must be final, sealed (further restrict), or non-sealed (open again)",
+          "Enables exhaustive pattern matching in switch — no default needed",
+          "Great for domain modeling: Payment sealed permits CreditCard, DebitCard, UPI",
+          "Permitted subclasses must be in the same module (or same package if unnamed module)"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What problem do sealed classes solve?",
+        "answer": "Before sealed classes, you had two options: final (no extensions) or open (anyone extends). Sealed classes provide a controlled middle ground — you list exactly which types can extend you. This gives the compiler complete knowledge of all subtypes, enabling exhaustive pattern matching in switch (no default needed), and makes domain modeling more precise. Example: an Expression type that can ONLY be Literal, Addition, or Multiplication."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "non-sealed Opens the Hierarchy",
+        "mistake": "Thinking all subtypes of a sealed class are also restricted. A non-sealed subclass allows anyone to extend it freely.",
+        "correct": "Each permitted subclass chooses its own restriction: final (closed), sealed (further restricted), or non-sealed (open). non-sealed breaks the sealed guarantee for that branch of the hierarchy."
+      }
+    ]
+  },
+  {
+    "id": "records",
+    "title": "Records",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Records: Concise Data Carriers",
+        "paragraphs": [
+          "Records (Java 16) are a special kind of class designed for immutable data carriers. A record declaration automatically generates: a constructor, getters (named like the fields, not getXxx()), equals(), hashCode(), and toString(). This eliminates the boilerplate of data classes.",
+          "Records are implicitly final and their fields are implicitly final. They cannot extend other classes (but can implement interfaces). Records are perfect for DTOs, value objects, tuples, and any 'data holder' scenario."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Records in Action",
+        "code": "// Traditional POJO: ~50 lines\npublic class Point { ... constructor, getters, equals, hashCode, toString ... }\n\n// Record: 1 line!\npublic record Point(int x, int y) {}\n\n// Usage\nPoint p = new Point(3, 4);\np.x();          // 3 (not getX()!)\np.y();          // 4\np.toString();   // \"Point[x=3, y=4]\"\n\n// Compact constructor — for validation\npublic record Age(int value) {\n    public Age {\n        if (value < 0) throw new IllegalArgumentException(\"Age cannot be negative\");\n        // No need for this.value = value — done automatically\n    }\n}\n\n// Records can implement interfaces\npublic record Employee(String name, double salary) implements Comparable<Employee> {\n    @Override\n    public int compareTo(Employee other) {\n        return Double.compare(this.salary, other.salary);\n    }\n}"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Records auto-generate: constructor, accessors (name(), not getName()), equals, hashCode, toString",
+          "Records are implicitly final — cannot be extended",
+          "Record fields are implicitly final — immutability guaranteed",
+          "Compact constructors don't need parameter assignment — it's done automatically after validation",
+          "Records can implement interfaces but cannot extend classes (implicitly extend Record)",
+          "Records can have static fields, static methods, and instance methods",
+          "Records are ideal for DTOs, value objects, and as local record types inside methods (Java 16+)"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What are Records in Java and when should you use them?",
+        "answer": "Records are immutable data carriers introduced in Java 16. They auto-generate constructor, accessors, equals(), hashCode(), and toString(). Use records for: DTOs, API response/request objects, value objects (Money, Coordinate), compound Map keys, and local data aggregation. Avoid records when you need mutability, inheritance (records are final), or when the data class has complex behavior beyond just holding data."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Record Accessor Names",
+        "mistake": "Calling record.getName() — records use name() not getXxx().",
+        "correct": "Record accessors are named after the component: record Point(int x, int y) → point.x(), point.y(). This differs from JavaBean convention (getX(), getY()) and can cause issues with frameworks expecting JavaBean-style getters.",
+        "codeExample": "record User(String name, int age) {}\nUser u = new User(\"Alice\", 30);\nu.name();    // \"Alice\" — correct\nu.getName(); // COMPILE ERROR — no such method"
+      }
+    ]
+  },
+  {
+    "id": "pattern-matching",
+    "title": "Pattern Matching",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Switch Pattern Matching (Java 21)",
+        "paragraphs": [
+          "Java 21 finalized pattern matching for switch, combining type patterns, guarded patterns (when clauses), and null handling into a powerful dispatch mechanism. This is especially potent with sealed types, enabling exhaustive type-based logic without instanceof chains or the Visitor pattern.",
+          "Guarded patterns use the when keyword to add conditions: case String s when s.length() > 5 matches only strings longer than 5 characters. This replaces nested if-else inside case blocks."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Pattern Matching for Switch (Java 21)",
+        "code": "// Type pattern matching\nString format(Object obj) {\n    return switch (obj) {\n        case Integer i  -> \"Integer: \" + i;\n        case Long l     -> \"Long: \" + l;\n        case Double d   -> \"Double: \" + d;\n        case String s   -> \"String: \" + s;\n        case null       -> \"null value\";\n        default         -> \"Unknown: \" + obj;\n    };\n}\n\n// Guarded patterns with 'when'\nString classify(Shape s) {\n    return switch (s) {\n        case Circle c when c.radius() > 100 -> \"Large circle\";\n        case Circle c    -> \"Small circle\";\n        case Rectangle r -> \"Rectangle \" + r.width() + \"x\" + r.height();\n        case Triangle t  -> \"Triangle\";\n    };\n}\n\n// Record patterns — destructuring (Java 21)\nrecord Point(int x, int y) {}\n\nString describe(Object obj) {\n    return switch (obj) {\n        case Point(int x, int y) when x == 0 && y == 0 -> \"Origin\";\n        case Point(int x, int y) -> \"Point(\" + x + \",\" + y + \")\";\n        default -> \"Not a point\";\n    };\n}"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Switch pattern matching (Java 21) handles type checks, guards, and null in one switch",
+          "Guarded patterns use 'when' keyword — case String s when s.length() > 5",
+          "Pattern order matters — more specific patterns must come before general ones",
+          "null can be a case label — no more NullPointerException before the switch",
+          "Record patterns enable destructuring — case Point(int x, int y)",
+          "Combined with sealed classes, the compiler ensures exhaustiveness without default"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "How does pattern matching for switch improve over if-else instanceof chains?",
+        "answer": "Pattern matching switch: (1) Combines type check + cast + guard in one case label, (2) Compiler checks for exhaustiveness with sealed types, (3) Handles null explicitly as a case, (4) Ensures pattern dominance ordering at compile time, (5) Enables record destructuring. Compare to instanceof chains which are verbose, error-prone (manual casts), and don't support exhaustiveness checking."
+      }
+    ],
+    "trickyPoints": [
+      {
+        "title": "Pattern Dominance Order",
+        "mistake": "Putting a general pattern before a specific guarded pattern — the general pattern matches first.",
+        "correct": "Java enforces dominance ordering: more specific patterns (with guards) must appear before general patterns of the same type. The compiler will error if a pattern is unreachable.",
+        "codeExample": "// COMPILE ERROR — case String s dominates the guarded case\nswitch (obj) {\n    case String s    -> \"string\";      // catches ALL strings\n    case String s when s.isEmpty() -> \"empty\"; // unreachable!\n}\n\n// CORRECT — specific first\nswitch (obj) {\n    case String s when s.isEmpty() -> \"empty\";\n    case String s -> \"string\";\n}"
+      }
+    ]
+  },
+  {
+    "id": "text-blocks",
+    "title": "Text Blocks",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Multi-Line String Literals (Java 15)",
+        "paragraphs": [
+          "Text blocks use triple double-quotes (\"\"\") to create multi-line string literals without escape sequences for newlines. The opening \"\"\" must be followed by a newline (content starts on the next line). The closing \"\"\" position determines the common leading whitespace that gets stripped.",
+          "Text blocks support the same escape sequences as regular strings plus two new ones: \\s (preserve trailing space) and \\ (line continuation, suppresses newline). They are especially useful for SQL, JSON, HTML, and formatted output."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "Text Blocks in Practice",
+        "code": "// SQL — clean and readable\nString sql = \"\"\"\n        SELECT name, email\n        FROM users\n        WHERE active = true\n        ORDER BY name\n        \"\"\";\n\n// JSON\nString json = \"\"\"\n        {\n            \"name\": \"Alice\",\n            \"age\": 30,\n            \"role\": \"Engineer\"\n        }\n        \"\"\";\n\n// With formatting\nString html = \"\"\"\n        <html>\n            <body>\n                <h1>%s</h1>\n                <p>%s</p>\n            </body>\n        </html>\n        \"\"\".formatted(title, body);"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "Closing \"\"\" position determines indentation stripping — align it to set the left margin",
+          "\\s preserves trailing whitespace that would normally be trimmed",
+          "\\ at end of line suppresses the newline (line continuation)",
+          "Text blocks produce regular String objects — no runtime difference",
+          ".formatted() replaces String.format() for text blocks (Java 15+)"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "How does indentation work in Java text blocks?",
+        "answer": "Java strips common leading whitespace based on the position of the closing \"\"\". The compiler finds the minimum indentation across all lines (including the closing delimiter line) and removes that many spaces from each line. Moving the closing \"\"\" left increases indentation in the result; moving it right reduces or eliminates it. Content must start on the line after the opening \"\"\"."
+      }
+    ],
+    "trickyPoints": []
+  },
+  {
+    "id": "string-templates",
+    "title": "String Templates",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "String Templates (Preview Feature)",
+        "paragraphs": [
+          "String Templates (previewed in Java 21) provide a modern string interpolation mechanism using template processors. The STR processor is the default: STR.\"Hello \\{name}, you are \\{age} years old\". The \\{expression} syntax embeds any Java expression directly into the string.",
+          "Unlike simple concatenation, template processors are pluggable — you can create custom processors for SQL (preventing injection), JSON (ensuring valid structure), or any DSL. This makes string templates both convenient and safe."
+        ]
+      },
+      {
+        "type": "code",
+        "language": "java",
+        "title": "String Templates (Java 21 Preview)",
+        "code": "// Basic interpolation with STR processor\nString name = \"Alice\";\nint age = 30;\nString msg = STR.\"Hello \\{name}, you are \\{age} years old\";\n\n// Expressions inside templates\nString calc = STR.\"2 + 3 = \\{2 + 3}\";\nString upper = STR.\"Name: \\{name.toUpperCase()}\";\n\n// Multi-line template\nString json = STR.\"\"\"\n        {\n            \"name\": \"\\{name}\",\n            \"age\": \\{age}\n        }\n        \"\"\";\n\n// FMT processor — printf-style formatting\nString formatted = FMT.\"%-10s\\{name} %5d\\{age}\";"
+      },
+      {
+        "type": "keyPoints",
+        "points": [
+          "String templates use \\{expression} syntax for interpolation (not ${} like other languages)",
+          "Template processors (STR, FMT) are pluggable — custom processors can validate/sanitize",
+          "This is a preview feature in Java 21 — enable with --enable-preview",
+          "Solves SQL injection, XSS, and format string vulnerabilities through safe processors",
+          "Works with text blocks for multi-line interpolated strings"
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What advantage do String Templates have over string concatenation?",
+        "answer": "String Templates provide: (1) Readability — inline expressions are easier to read than concatenation or String.format, (2) Safety — custom template processors can validate structure (preventing SQL injection, XSS), (3) Type safety — expressions are type-checked at compile time, (4) Pluggability — different processors for different output formats. Concatenation is error-prone and String.format has no compile-time type checking for format specifiers."
+      }
+    ],
+    "trickyPoints": []
+  }
+]

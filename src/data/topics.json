@@ -1,0 +1,72 @@
+[
+  {
+    "id": "java",
+    "icon": "☕",
+    "title": "Java",
+    "description": "Master OOP, JVM internals, Collections, Concurrency, Streams, and Java 8+ features. Deep-dive into the language that powers enterprise systems.",
+    "category": "LANGUAGE",
+    "color": "#EF4444",
+    "tags": ["OOP", "JVM", "Concurrency", "Collections"],
+    "status": "live"
+  },
+  {
+    "id": "spring-boot",
+    "icon": "🍃",
+    "title": "Spring Boot",
+    "description": "Build production-grade microservices. Understand auto-configuration, dependency injection, Spring Security, JPA, and REST API design patterns.",
+    "category": "FRAMEWORK",
+    "color": "#22C55E",
+    "tags": ["DI", "REST", "Security", "JPA"],
+    "status": "live"
+  },
+  {
+    "id": "javascript",
+    "icon": "⚡",
+    "title": "JavaScript",
+    "description": "Event loop, closures, prototypes, async/await, ES6+ features, and the nuances that trip up even experienced developers in interviews.",
+    "category": "LANGUAGE",
+    "color": "#FF8C00",
+    "tags": ["ES6+", "Closures", "Async", "Prototypes"],
+    "status": "live"
+  },
+  {
+    "id": "react",
+    "icon": "⚛️",
+    "title": "React",
+    "description": "Component architecture, hooks deep-dive, state management, performance optimization, and building scalable frontend applications.",
+    "category": "FRAMEWORK",
+    "color": "#06B6D4",
+    "tags": ["Hooks", "State", "Performance", "Patterns"],
+    "status": "live"
+  },
+  {
+    "id": "dsa",
+    "icon": "🧮",
+    "title": "DSA",
+    "description": "Arrays, trees, graphs, dynamic programming, and pattern-based problem solving. Structured approach to cracking coding interviews.",
+    "category": "CONCEPTS",
+    "color": "#A855F7",
+    "tags": ["Arrays", "Trees", "DP", "Graphs"],
+    "status": "live"
+  },
+  {
+    "id": "hld",
+    "icon": "🏗️",
+    "title": "High Level Design",
+    "description": "Design scalable distributed systems. Load balancing, caching, message queues, database sharding, and system design interview frameworks.",
+    "category": "DESIGN",
+    "color": "#3B82F6",
+    "tags": ["Scalability", "Caching", "Distributed", "Queues"],
+    "status": "coming"
+  },
+  {
+    "id": "lld",
+    "icon": "🔧",
+    "title": "Low Level Design",
+    "description": "SOLID principles, design patterns, class diagrams, clean code architecture. Build maintainable systems from the ground up.",
+    "category": "DESIGN",
+    "color": "#EC4899",
+    "tags": ["SOLID", "Patterns", "OOD", "Clean Code"],
+    "status": "coming"
+  }
+]

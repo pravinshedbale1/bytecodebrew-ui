@@ -1,0 +1,310 @@
+/* ============================================
+   LandingPage — Module CSS
+   ============================================ */
+
+/* --- Page Wrapper --- */
+.page {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* --- Glow Orbs --- */
+.orbOrange1 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  top: -100px;
+  left: -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orbPurple {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 600px;
+  right: -100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orbBlue {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  top: 1400px;
+  left: -120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orbOrange2 {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  top: 2200px;
+  right: -80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Hero Section --- */
+.hero {
+  position: relative;
+  z-index: 1;
+  padding: 120px var(--content-padding) 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.heroStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 6px 16px;
+  border-radius: 100px;
+  background: rgba(255, 140, 0, 0.08);
+  border: 1px solid rgba(255, 140, 0, 0.15);
+  animation: fadeSlideIn 0.6s ease 0.1s both;
+}
+
+.heroDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.heroStatusText {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.heroTitle {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 1.1;
+  background: linear-gradient(135deg, #E8E6E3 0%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  max-width: 720px;
+  margin-bottom: 20px;
+  animation: fadeSlideIn 0.6s ease 0.2s both;
+}
+
+.heroSubtitle {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  font-size: clamp(16px, 2.5vw, 18px);
+  line-height: 1.75;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin-bottom: 32px;
+  animation: fadeSlideIn 0.6s ease 0.3s both;
+}
+
+/* --- Hero Stats --- */
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+  animation: fadeSlideIn 0.6s ease 0.45s both;
+}
+
+.statBox {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.statBox:hover {
+  border-color: rgba(255, 140, 0, 0.3);
+}
+
+.statValue {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: clamp(24px, 3.5vw, 36px);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* --- Topics Section --- */
+.topicsSection {
+  position: relative;
+  z-index: 1;
+  padding: 20px var(--content-padding) 40px;
+  max-width: calc(var(--max-width) + 48px);
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.sectionSubtitle {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin-bottom: 40px;
+}
+
+/* --- Topics Grid --- */
+.topicsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* --- Section entrance animation --- */
+.sectionHidden {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.sectionVisible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* tile entrance stagger via CSS animation */
+.tileEntrance {
+  animation: fadeSlideIn 0.5s ease both;
+}
+
+/* --- Brand Closing --- */
+.brandClose {
+  text-align: center;
+  padding: 16px var(--content-padding) 0;
+  position: relative;
+  z-index: 1;
+  animation: fadeSlideIn 0.6s ease 0.5s both;
+}
+
+.brandCloseName {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.brandCloseTagline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--orange);
+  opacity: 0.6;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px var(--content-padding) 24px;
+  }
+
+  .heroStats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 100%;
+  }
+
+  .topicsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .topicsSection {
+    padding: 16px var(--content-padding) 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 90px 16px 20px;
+  }
+
+  .heroStats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .statBox {
+    padding: 14px 10px;
+    border-radius: 12px;
+  }
+
+  .statValue {
+    font-size: clamp(20px, 5vw, 28px);
+  }
+
+  .statLabel {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+  }
+
+  .topicsSection {
+    padding: 12px 16px 24px;
+  }
+
+  .topicsGrid {
+    gap: 14px;
+  }
+}
+
+/* Stagger animation delays for tile grid items */
+.tileDelay0 { animation-delay: 0.05s; }
+.tileDelay1 { animation-delay: 0.1s; }
+.tileDelay2 { animation-delay: 0.15s; }
+.tileDelay3 { animation-delay: 0.2s; }
+.tileDelay4 { animation-delay: 0.25s; }
+.tileDelay5 { animation-delay: 0.3s; }
+.tileDelay6 { animation-delay: 0.35s; }
+.tileDelay7 { animation-delay: 0.4s; }
