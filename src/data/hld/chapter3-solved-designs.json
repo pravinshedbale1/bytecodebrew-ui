@@ -1,0 +1,234 @@
+[
+  {
+    "id": "url-shortener",
+    "title": "Design a URL Shortener (TinyURL)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Given a long URL, return a shorter alias. Given a short alias, redirect to the original URL. Links may expire.",
+          "Non-Functional: Highly available, low latency for reads, high scale (billions of URLs)."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. API Gateway/Load Balancer to route traffic.",
+          "2. Web servers to handle generation and redirection.",
+          "3. Database (NoSQL like Cassandra or DynamoDB is preferred for scale and high writes/reads).",
+          "4. Key Generation Service (KGS) to pre-generate unique IDs."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "chat-system",
+    "title": "Design a Chat System (WhatsApp)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: 1-on-1 chat, group chat, message status (sent, delivered, read).",
+          "Non-Functional: Low latency, high availability, strong ordering."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Use WebSockets for persistent, bidirectional connections.",
+          "2. Chat servers to hold WebSocket connections.",
+          "3. Message queue (Kafka) for asynchronous processing and persistence.",
+          "4. Database for message storage (Cassandra/HBase)."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "video-streaming",
+    "title": "Design a Video Streaming Platform (YouTube)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Upload videos, view videos, search.",
+          "Non-Functional: High availability, low latency streaming, large storage capacity."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Metadata DB (MySQL/PostgreSQL) and Object Storage (S3) for videos.",
+          "2. Transcoding pipeline (message queue + workers) to convert videos into multiple formats/resolutions.",
+          "3. CDN (Content Delivery Network) to serve video chunks globally with low latency."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ride-sharing",
+    "title": "Design a Ride-Sharing App (Uber)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Drivers send location updates, riders request rides, matching system.",
+          "Non-Functional: Low latency, high availability, geospatial querying."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Location Service to receive high-frequency driver updates.",
+          "2. Geospatial Database (Redis with Geospatial features or specialized DB like QuadTree index).",
+          "3. Matching Engine to pair riders and drivers."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "social-network",
+    "title": "Design a Social Network Feed (Twitter)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Post tweets, follow users, view home feed.",
+          "Non-Functional: High availability, fast feed generation."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Feed Generation: Fan-out on write (push model) vs Fan-out on read (pull model).",
+          "2. Use hybrid approach: Push for inactive users, Pull for celebrities.",
+          "3. Cache feeds aggressively (Redis)."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ecommerce",
+    "title": "Design an E-commerce Platform (Amazon)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Product catalog, shopping cart, checkout, order management.",
+          "Non-Functional: High availability, strong consistency for inventory/payments."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Microservices architecture (Catalog, Cart, Order, Payment).",
+          "2. Search indexing (Elasticsearch) for fast product discovery.",
+          "3. Distributed transactions or Sagas for checkout."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "web-crawler",
+    "title": "Design a Web Crawler",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Start from seed URLs, extract links, store content.",
+          "Non-Functional: High scale, politeness (don't DDoS servers), fault tolerance."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. URL Frontier to manage the queue of URLs to crawl.",
+          "2. DNS caching to speed up resolution.",
+          "3. HTML fetchers and parsers.",
+          "4. Content deduplication using checksums/hashes."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "api-rate-limiter",
+    "title": "Design an API Rate Limiter",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Limit requests based on IP/User ID.",
+          "Non-Functional: Very low latency, minimal memory footprint."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Use Redis as a fast, centralized store.",
+          "2. Implement Token Bucket or Sliding Window algorithm using Redis scripting (Lua) for atomicity."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "distributed-cache",
+    "title": "Design a Distributed Cache (Redis)",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Key-value storage, eviction policies.",
+          "Non-Functional: Low latency, scalability, fault tolerance."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Consistent Hashing to distribute keys across nodes while minimizing data movement during scaling.",
+          "2. LRU/LFU eviction policies.",
+          "3. Replication for high availability."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "notification-system",
+    "title": "Design a Notification System",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Requirements",
+        "paragraphs": [
+          "Functional: Send Push/SMS/Email notifications to users.",
+          "Non-Functional: High throughput, guaranteed delivery, track status."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "High Level Design",
+        "paragraphs": [
+          "1. Message queues (Kafka) to decouple services and buffer bursts.",
+          "2. Dedicated workers for Push, SMS, and Email.",
+          "3. Retry mechanisms and dead-letter queues for failures."
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,116 @@
+[
+  {
+    "id": "scaling-basics",
+    "title": "Vertical vs. Horizontal Scaling",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Introduction to Scaling",
+        "paragraphs": [
+          "As your application grows, the single server handling requests will eventually hit its limits. Scaling is the process of adding resources to handle increased load.",
+          "There are two primary ways to scale: Vertical Scaling (scaling up) and Horizontal Scaling (scaling out)."
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Scaling Comparison",
+        "headers": ["Aspect", "Vertical Scaling (Scale Up)", "Horizontal Scaling (Scale Out)"],
+        "rows": [
+          ["Definition", "Adding more CPU, RAM, or storage to an existing machine", "Adding more machines to a pool of resources"],
+          ["Limits", "Hardware has a hard upper limit (e.g., max RAM a motherboard supports)", "Theoretically infinite"],
+          ["Downtime", "Usually requires downtime to upgrade hardware", "Can add machines dynamically with no downtime"],
+          ["Complexity", "Simple, no code changes needed", "Requires load balancing, distributed state management, and orchestration"]
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "When to choose which?",
+        "paragraphs": [
+          "Vertical scaling is great for simple, non-critical applications or during the early stages of a startup where engineering time is more valuable than hardware costs. However, it introduces a single point of failure (SPOF).",
+          "Horizontal scaling is essential for modern, high-availability, distributed systems. While it adds complexity, it provides redundancy and allows for massive scale."
+        ]
+      }
+    ],
+    "interviewQuestions": [
+      {
+        "question": "What is the single point of failure (SPOF) and how does scaling relate to it?",
+        "answer": "A SPOF is a part of a system that, if it fails, will stop the entire system from working. Vertical scaling inherently relies on a single powerful machine, so if that machine crashes, the system goes down. Horizontal scaling uses multiple machines, so if one fails, others can take over, removing the SPOF."
+      }
+    ]
+  },
+  {
+    "id": "load-balancing",
+    "title": "Load Balancing Algorithms",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "Distributing the Load",
+        "paragraphs": [
+          "When you scale horizontally, you have multiple servers. A Load Balancer sits in front of them and distributes incoming client requests across these servers to ensure no single server is overwhelmed."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Common Algorithms",
+        "paragraphs": [
+          "1. Round Robin: Distributes requests sequentially across the servers. Simple but doesn't account for server load.",
+          "2. Least Connections: Sends requests to the server with the fewest active connections. Good for long-lived connections.",
+          "3. Least Response Time: Sends requests to the server with the lowest response time. Combines load and performance.",
+          "4. IP Hash: Hashes the client's IP address to determine the server. Ensures a specific client always hits the same server (useful for sticky sessions)."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "caching",
+    "title": "Caching Strategies",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "The Need for Speed",
+        "paragraphs": [
+          "Caching is the technique of storing copies of frequently accessed data in a fast, temporary storage (usually memory, like Redis or Memcached) to reduce the latency of fetching it from the primary storage (like a database)."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Caching Strategies",
+        "paragraphs": [
+          "1. Cache-Aside (Lazy Loading): The application first checks the cache. If a hit, return it. If a miss, fetch from DB, put in cache, and return. Good for read-heavy workloads.",
+          "2. Write-Through: Data is written to the cache and the database simultaneously. Ensures data consistency but adds latency to writes.",
+          "3. Write-Behind (Write-Back): Data is written to the cache and immediately returned. An asynchronous process writes to the DB later. High write performance but risks data loss if the cache crashes before syncing."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cap-theorem",
+    "title": "CAP Theorem & PACELC",
+    "content": [
+      {
+        "type": "explanation",
+        "heading": "The CAP Theorem",
+        "paragraphs": [
+          "The CAP Theorem states that a distributed system can only provide two of the following three guarantees simultaneously:",
+          "1. Consistency (C): All nodes see the same data at the same time.",
+          "2. Availability (A): Every request receives a response (not an error), even if some nodes fail.",
+          "3. Partition Tolerance (P): The system continues to operate despite network partitions (communication drops between nodes)."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "Why 'Pick Two' is Misleading",
+        "paragraphs": [
+          "In any distributed network, partitions (P) are inevitable. Therefore, you must always choose Partition Tolerance. The real choice is between Consistency and Availability during a partition: CP vs. AP."
+        ]
+      },
+      {
+        "type": "explanation",
+        "heading": "PACELC Theorem",
+        "paragraphs": [
+          "PACELC extends CAP. It states that if there is a Partition (P), you must choose between Availability (A) and Consistency (C). Else (E) — when the system is running normally — you must choose between Latency (L) and Consistency (C)."
+        ]
+      }
+    ]
+  }
+]
